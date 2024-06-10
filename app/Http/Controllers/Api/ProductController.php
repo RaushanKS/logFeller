@@ -42,8 +42,8 @@ class ProductController extends Controller
                     }
                 }
 
-                if ($products->has_variant && $products->variants->isNotEmpty()) {
-                    $variantPrices = $products->variants->pluck('sale_price');
+                if ($product->has_variant && $product->variants->isNotEmpty()) {
+                    $variantPrices = $product->variants->pluck('sale_price');
                     $minPrice = $variantPrices->min();
                     $maxPrice = $variantPrices->max();
                     $price = "{$currencySymbol}{$minPrice} - {$currencySymbol}{$maxPrice}";

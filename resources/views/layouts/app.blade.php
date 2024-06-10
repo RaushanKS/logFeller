@@ -326,6 +326,26 @@
                     <li class="menu-header small text-uppercase">
                         <span class="menu-header-text" data-i18n="Apps & Pages">Apps &amp; Pages</span>
                     </li>
+                    @if( Route::currentRouteName()=='user'
+                        // || Route::currentRouteName()=='enquiries.deleteEnquiriesAll'
+                        || Route::currentRouteName()=='user.delete'  
+                    )
+                    @php
+                    $usersAdd = 'active';
+                    @endphp
+                    @else
+                    @php
+                    $usersAdd = '';
+                    @endphp
+                    @endif
+
+                    <li class="menu-item {{$usersAdd}}">
+                        <a href="{{ url('/user') }}" class="menu-link">
+                            {{-- <i class="menu-icon tf-icons ti ti-contacts"></i> --}}
+                            <i class="menu-icon tf-icons ti ti-user"></i>
+                            <div data-i18n="Users">Users</div>
+                        </a>
+                    </li>
                     @if( Route::currentRouteName()=='products'
                         || Route::currentRouteName()=='products.create'
                         || Route::currentRouteName()=='products.store'
@@ -463,7 +483,7 @@
                     <li class="menu-item {{$enquiriesAdd}}">
                         <a href="{{ url('/enquiries') }}" class="menu-link">
                             {{-- <i class="menu-icon tf-icons ti ti-contacts"></i> --}}
-                            <i class="menu-icon fa-regular fa-envelope"></i>
+                            <i class="menu-icon tf-icons ti ti-mail"></i>
                             <div data-i18n="Enquiries">Enquiries</div>
                         </a>
                     </li>
@@ -1475,15 +1495,16 @@
 
 
                         <!-- Search -->
-                        {{-- <div class="navbar-nav align-items-center">
+                        <div class="navbar-nav align-items-center">
                             <div class="nav-item navbar-search-wrapper mb-0">
-                                <a class="nav-item nav-link search-toggler d-flex align-items-center px-0"
+                                <h4 class="nav-item nav-link search-toggler d-flex align-items-center px-0">The Log Feller - Admin Dashboard</h4>
+                                {{-- <a class="nav-item nav-link search-toggler d-flex align-items-center px-0"
                                     href="javascript:void(0);">
                                     <i class="ti ti-search ti-md me-2"></i>
                                     <span class="d-none d-md-inline-block text-muted">Search (Ctrl+/)</span>
-                                </a>
+                                </a> --}}
                             </div>
-                        </div> --}}
+                        </div>
                         <!-- /Search -->
 
 
@@ -1907,7 +1928,7 @@
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end">
                                     <li>
-                                        <a class="dropdown-item" href="pages-account-settings-account.html">
+                                        <a class="dropdown-item" href="{{ url('/profile') }}">
                                             <div class="d-flex">
                                                 <div class="flex-shrink-0 me-3">
                                                     <div class="avatar avatar-online">
@@ -1926,7 +1947,7 @@
                                         <div class="dropdown-divider"></div>
                                     </li>
                                     <li>
-                                        <a class="dropdown-item" href="pages-profile-user.html">
+                                        <a class="dropdown-item" href="{{ url('/profile') }}">
                                             <i class="ti ti-user-check me-2 ti-sm"></i>
                                             <span class="align-middle">My Profile</span>
                                         </a>

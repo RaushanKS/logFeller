@@ -1,3 +1,392 @@
+// Profile update Section
+
+const validateEmail = (email) => {
+    return String(email)
+        .toLowerCase()
+        .match(
+            /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+        );
+};
+
+function profileinfoformSubmit(e) {
+    let formId = $(e).attr("data-id");
+    var elements = document.getElementById(formId).elements;
+    var obj = {};
+    for (var i = 0; i < elements.length; i++) {
+        var item = elements.item(i);
+
+        if (item.value == "" && item.id != "undefined" && item.id != "") {
+            let dataIDGet = $("#" + item.id).attr("data-id");
+            let dataRequiredGet = $("#" + item.id).attr("data-name");
+            if (
+                dataRequiredGet === "yes" &&
+                dataIDGet != "" &&
+                dataIDGet != "undefined"
+            ) {
+                $("#" + dataIDGet).show();
+                $("#" + item.id).focus();
+                return false;
+            } else {
+                $("#" + dataIDGet).hide();
+            }
+        } else {
+            if (
+                item.value != "" &&
+                item.name != "_token" &&
+                item.id != "undefined" &&
+                item.id != ""
+            ) {
+                let dataIDGet = $("#" + item.id).attr("data-id");
+                if (dataIDGet != "" && dataIDGet != "undefined") {
+                    if (item.id == "email") {
+                        if (!validateEmail(item.value)) {
+                            $("#" + dataIDGet).text("Please enter valid email");
+                            $("#" + dataIDGet).show();
+                            $("#" + item.id).focus();
+                            return false;
+                        } else {
+                            $("#" + dataIDGet).text("This is required field");
+                            $("#" + dataIDGet).hide();
+                        }
+                    }
+                    $("#" + dataIDGet).hide();
+                }
+            }
+        }
+        obj[item.name] = item.value;
+    }
+
+    let action = $(e).attr("data-action");
+    $.ajax({
+        type: "POST",
+        url: action,
+        data: obj,
+        success: function (response) {
+            if (response.success == true) {
+                let html =
+                    '<div class="alert alert-success alert-dismissible fade show" role="alert"><i class="mdi mdi-check-all me-2"></i>'
+                    + response.message +
+                    '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>';
+                // '<div class="toast toast-autohide show" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="false"><div class="toast-header" style="background: #288900;color: #f1f1f1;"><strong class="me-auto">Success</strong><small class="text-muted" style="color:#ffffff!important">just now</small><button type="button" class="ms-1 btn-close" data-bs-dismiss="toast" aria-label="Close"></button></div><div class="toast-body">' +
+                // response.message +
+                // "</div></div>";
+                $(".messageShowAlert").append(html);
+                setTimeout(function () {
+                    $(".toast-autohide").remove();
+                }, 3000);
+                if (response.redirectUrl) {
+                    $(location).attr("href", response.redirectUrl);
+                }
+            } else {
+                let html =
+                    '<div class="alert alert-danger alert-dismissible fade show" role="alert"><i class="mdi mdi-check-all me-2"></i>'
+                    + response.message +
+                    '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>';
+                // '<div class="toast toast-autohide show" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="false"><div class="toast-header" style="background: #ff0000;color: #fafbfd;"><strong class="me-auto">Danger!</strong><small class="text-muted" style="color:#ffffff!important">just now</small><button type="button" class="ms-1 btn-close" data-bs-dismiss="toast" aria-label="Close"></button></div><div class="toast-body">' +
+                // response.message +
+                // "</div></div>";
+                $(".messageShowAlert").append(html);
+                setTimeout(function () {
+                    $(".toast-autohide").remove();
+                }, 3000);
+                $(location).attr("href", window.location);
+            }
+        },
+    });
+}
+
+function formImageSubmit(e) {
+    let formId = $(e).attr("data-id");
+    var file = $("input[type=file]")[0].files[0];
+    let action = $(e).attr("data-action");
+    var form_data = new FormData();
+    form_data.append("file", file);
+    form_data.append("_token", $('meta[name="csrf-token"]').attr("content"));
+    $.ajax({
+        type: "POST",
+        url: action,
+        cache: false,
+        contentType: false,
+        processData: false,
+        data: form_data,
+        success: function (response) {
+            if (response.success == true) {
+                console.log(`{{ asset('/') }}`);
+                $(".userProfile").attr("src", baseUrl + "/" + response.file);
+                let html =
+                    '<div class="alert alert-success alert-dismissible fade show" role="alert"><i class="mdi mdi-check-all me-2"></i>'
+                    + response.message +
+                    '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>';
+                $(".messageShowAlert").append(html);
+                setTimeout(function () {
+                    $(".toast-autohide").remove();
+                }, 3000);
+                $(location).attr("href", window.location);
+            } else {
+                let html =
+                    '<div class="alert alert-danger alert-dismissible fade show" role="alert"><i class="mdi mdi-check-all me-2"></i>'
+                    + response.message +
+                    '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>';
+                $(".messageShowAlert").append(html);
+                setTimeout(function () {
+                    $(".toast-autohide").remove();
+                }, 3000);
+                $(location).attr("href", window.location);
+            }
+        },
+    });
+}
+
+//Users table code starts  
+
+if ($("#userTable").length > 0) {
+    $("#userTable").DataTable({
+        dom: '<"card-header border-bottom p-1"<"head-label"><"dt-action-buttons text-end me-2"B>><"user_status mt-50 width-200"><"d-flex justify-content-between align-items-center mx-0 row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>t<"d-flex justify-content-between mx-0 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+
+        // buttons: [
+        //     {
+        //         className: "btn btn-danger me-2 DeleteALL",
+        //         text: "Delete",
+        //     },
+        //     {
+        //         className: "btn btn-primary onlineAll",
+        //         text: "Active",
+        //     },
+        //     {
+        //         className: "btn btn-warning offlineAll",
+        //         text: "InActive",
+        //     },
+        //     {
+        //         extend: "collection",
+        //         className: "btn btn-outline-info dropdown-toggle me-2",
+        //         text: "Export",
+        //         buttons: [
+        //             {
+        //                 extend: "print",
+        //                 text: "Print",
+        //                 className: "dropdown-item",
+        //                 exportOptions: {
+        //                     columns: [1, 2, 3],
+        //                 },
+        //             },
+        //             {
+        //                 extend: "csv",
+        //                 text: "Csv",
+        //                 className: "dropdown-item",
+        //                 exportOptions: {
+        //                     columns: [1, 2, 3],
+        //                 },
+        //             },
+        //             {
+        //                 extend: "excel",
+        //                 text: "Excel",
+        //                 className: "dropdown-item",
+        //                 exportOptions: {
+        //                     columns: [1, 2, 3],
+        //                 },
+        //             },
+        //             {
+        //                 extend: "pdf",
+        //                 text: "Pdf",
+        //                 className: "dropdown-item",
+        //                 exportOptions: {
+        //                     columns: [1, 2, 3],
+        //                 },
+        //             },
+        //             {
+        //                 extend: "copy",
+        //                 text: "Copy",
+        //                 className: "dropdown-item",
+        //                 exportOptions: {
+        //                     columns: [1, 2, 3],
+        //                 },
+        //             },
+        //         ],
+        //         init: function (api, node, config) {
+        //             $(node).removeClass("btn-secondary");
+        //             $(node).parent().removeClass("btn-group");
+        //             setTimeout(function () {
+        //                 $(node)
+        //                     .closest(".dt-buttons")
+        //                     .removeClass("btn-group")
+        //                     .addClass("d-inline-flex");
+        //             }, 50);
+        //         },
+        //     },
+        // ],
+        initComplete: function () {
+            this.api()
+                .columns(6)
+                .every(function () {
+                    var column = this;
+                    var select = $(
+                        // '<select id="orderStatus" class="select2 form-select text-capitalize mb-3" style="margin-top:0.9em; margin-right:0.9em"><option value=""> Select Status </option><option value="1">Active</option><option value="0">Incative</option></select>'
+                    )
+                        .appendTo(".user_status")
+                        .on("change", function () {
+                            var val = $.fn.dataTable.util.escapeRegex(
+                                $(this).val()
+                            );
+                            column
+                                .search(val ? "" + val + "" : "", true, false)
+                                .draw();
+                        });
+                });
+        },
+        retrieve: true,
+        paging: true,
+        processing: true,
+        serverSide: true,
+        ajax: baseUrl + "/users/getUsers/",
+        pageLength: 10,
+        language: {
+            searchPlaceholder: "Search Name/Email/Phone",
+        },
+        columns: [
+            {
+                data: "id",
+            },
+            {
+                data: "name",
+            },
+            {
+                data: "email",
+            },
+            {
+                data: "phone",
+            },
+            {
+                data: "date",
+            },
+            {
+                data: "status",
+            },
+        ],
+        aoColumnDefs: [
+            {
+                targets: 0,
+                orderable: false,
+                checkboxes: {
+                    selectRow: true,
+                },
+            },
+
+            {
+                aTargets: [1],
+                mData: "id",
+                mRender: function (data, type, row, meta) {
+
+                    if (row.parent_id !== 0) {
+                        return "<p class='childNode'>" + row.name + "</p>";
+                    } else {
+                        return "<p>" + row.name + "</p>";
+                    }
+
+                },
+            },
+            {
+                aTargets: [2],
+                mData: "id",
+                mRender: function (data, type, row, meta) {
+                    if (row.parent_id !== 0) {
+                        return "<p class='childNode'>" + row.email + "</p>";
+                    } else {
+                        return "<p>" + row.email + "</p>";
+                    }
+                },
+            },
+            {
+                aTargets: [3],
+                mData: "id",
+                mRender: function (data, type, row, meta) {
+                    if (row.parent_id !== 0) {
+                        return "<p class='childNode'>" + row.phone + "</p>";
+                    } else {
+                        return "<p>" + row.phone + "</p>";
+                    }
+                },
+            },
+            {
+                aTargets: [4],
+                mData: "id",
+                mRender: function (data, type, row, meta) {
+                    if (row.parent_id !== 0) {
+                        return "<p class='childNode'>" + row.date + "</p>";
+                    } else {
+                        return "<p>" + row.date + "</p>";
+                    }
+                },
+            },
+            {
+                aTargets: [5],
+                mData: "id",
+                mRender: function (data, type, row, meta) {
+                    var statusText = row.status == 1 ? 'Active' : 'Inactive';
+                    var badgeClass = row.status == 1 ? 'bg-success bg-glow' : 'bg-danger bg-glow';
+                    var html = '<a class="updateUserStatus" id="filter-' + row.id + '" filter_id="' + row.id + '" href="javascript:void(0)">';
+                    html += '<span class="badge ' + badgeClass + '" status="' + statusText + '">' + statusText + '</span></a>';
+                    return html;
+                }
+            },
+
+            {
+                targets: 6,
+                orderable: false,
+            },
+            {
+                aTargets: [6],
+                mData: "id",
+                mRender: function (data, type, row, meta) {
+                    // let editUrl = baseUrl + "/admin/blog-post/edit/" + row.id;
+                    // let viewUrl = baseUrl + "/admin/video/view/" + row.id;
+                    let deleteUrl = baseUrl + "/user/delete/" + row.id;
+                    // <a class="action-class view-access editIcon" href="' +viewUrl +'" id="view_' +row.id +'"  ><i class="far fa-eye" aria-hidden="true"></i></a>
+                    return (
+                        // '<a class="action-class view-access editIcon" href="' +
+                        // editUrl +
+                        // '" id="edit_' +
+                        // row.id +
+                        // '"  ><i class="mdi mdi-lead-pencil" aria-hidden="true"></i></a>
+                        '<a class="delete-record action-class deleteIcon" href="javascript:void(0)" data-url="' +
+                        deleteUrl +
+                        '" onclick="confirmation(this);"  data-type="User" id="delete_record_' +
+                        row.id +
+                        '"><i class="fa fa-trash" aria-hidden="true"></i></a>'
+                    );
+                },
+            },
+        ],
+        select: {
+            style: "multi",
+        },
+        order: [[1, "asc"]],
+    });
+
+    $(document).on("click", ".updateUserStatus", function () {
+        var status = $(this).children("span").attr("status");
+        // console.log(status);
+        var filter_id = $(this).attr("filter_id");
+        $.ajax({
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            type: 'post',
+            url: '/update-user-status',
+            data: { status: status, filter_id: filter_id },
+            success: function (resp) {
+                if (resp['status'] == 1) {
+                    $("#filter-" + filter_id).html("<span class='badge bg-success bg-glow' status='Active'>Active</span>")
+                } else if (resp['status'] == 0) {
+                    $("#filter-" + filter_id).html("<span class='badge bg-danger bg-glow' status='Inactive'>Inactive</span>")
+                }
+            }, error: function () {
+                alert("Error")
+            }
+        })
+    });
+}
+
+
 //Products
 if ($("#productsTable").length > 0) {
     $("#productsTable").DataTable({
@@ -1481,13 +1870,6 @@ if ($("#enquiryTables").length > 0) {
         });
     });
 }
-
-
-
-
-
-
-
 
 function confirmation(e) {
     let id = $(e).attr("id");

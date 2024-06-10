@@ -126,7 +126,7 @@ class ProductAuthController extends Controller
                         "description" => $product->description,
                         // "featured_image" => $product->image_path ? asset($product->image_path) : '',
                         "images" => $product->images->map(function ($image) {
-                            return asset($image->image_path);
+                            return url($image->image_path);
                         }),
                         "variants" => $product->has_variant ? $product->variants : []
                     ];

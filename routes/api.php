@@ -63,6 +63,15 @@ Route::group(['prefix' => 'v1', 'namespace' => 'Api', 'middleware' => 'api'], fu
     Route::post('/coupon-apply', [CheckoutController::class, 'couponApply']);
     Route::post('/coupon-remove', [CheckoutController::class, 'couponRemove']);
 
+    //Order
+    Route::post('/order-create', [CheckoutController::class, 'orderCreate']);
+    Route::post('/payment-success', [CheckoutController::class, 'paymentSuccess']);
+    Route::post('/order-update', [CheckoutController::class, 'orderUpdate']);
+    Route::post('/order-list', [CheckoutController::class, 'orderList']);
+    Route::post('/order-items-fetch', [CheckoutController::class, 'orderItemsList']);
+    Route::post('/order-cancel', [CheckoutController::class, 'orderCancel']);
+    Route::post('/order-payment-details',  [CheckoutController::class, 'fetchPaymentDetails']);
+
     // Without Auth routes
 
     // Products

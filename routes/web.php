@@ -3,6 +3,7 @@
 use Carbon\Carbon;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\EnquiryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DiscountController;
@@ -64,12 +65,19 @@ Route::get('/register', [RegisterController::class, 'index'])->name('register');
 Route::post('/register', [RegisterController::class, 'create'])->name('register.create');
 
 Route::group(['middleware' => ['auth']], function () {
+    // Admin Profile
     Route::post('/logout', [DashboardController::class, 'logout'])->name('logout');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/profile', [ProfileController::class, 'profile']);
     Route::post('/profile-info-update/{id}', [ProfileController::class, 'infoUpdate']);
     Route::post('/profile-image-update/{id}', [ProfileController::class, 'profileImageUpdate']);
     Route::post('/password-update/{id}', [ProfileController::class, 'passwordUpdate']);
+
+    //Users  
+    Route::get('/user', [UserController::class, 'index'])->name('user');
+    Route::get('/users/getUsers/', [UserController::class, 'getUsers']);
+    Route::get('/user/delete/{id}', [UserController::class, 'destroy'])->name('user.delete');
+    Route::post('/update-user-status', [UserController::class, 'updateUserStatus'])->name('user');
 
     //Products
     Route::get('products', [ProductsController::class, 'index'])->name('products');
