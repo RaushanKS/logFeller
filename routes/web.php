@@ -4,6 +4,7 @@ use Carbon\Carbon;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\OrdersController;
 use App\Http\Controllers\EnquiryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DiscountController;
@@ -119,5 +120,11 @@ Route::group(['middleware' => ['auth']], function () {
     Route::post('enquiries/delete-all', [EnquiryController::class, 'deleteEnquiriesAll'])->name('enquiries.deleteEnquiriesAll');
     Route::get('enquiry/delete/{id}', [EnquiryController::class, 'destroy'])->name('enquiries.delete');
     Route::get('enquiry/getEnquiryDetails/{contactId}/', [EnquiryController::class, 'getEnquiryDetails']);
+
+    // Orders
+    Route::get('/orders', [OrdersController::class, 'index'])->name('orders');
+    Route::get('orders/getOrders/', [OrdersController::class, 'getOrders']);
+    Route::get('orders/view/{id}', [OrdersController::class, 'orderSingleView']);
+    Route::get('orders/items/view/{id}', [OrdersController::class, 'itemsSingleView']);
 
 });

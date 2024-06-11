@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Products;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notifiable;
@@ -27,4 +28,9 @@ class OrderItems extends Model
     ];
 
     protected $dates = ['deleted_at'];
+
+    public function product()
+    {
+        return $this->belongsTo(Products::class, 'product_id');
+    }
 }

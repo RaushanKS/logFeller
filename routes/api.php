@@ -62,6 +62,7 @@ Route::group(['prefix' => 'v1', 'namespace' => 'Api', 'middleware' => 'api'], fu
     Route::post('/fetch-carts', [CheckoutController::class, 'fetchCarts']);
     Route::post('/coupon-apply', [CheckoutController::class, 'couponApply']);
     Route::post('/coupon-remove', [CheckoutController::class, 'couponRemove']);
+    Route::post('/fetch-coupons', [CheckoutController::class, 'fetchCoupons']);
 
     //Order
     Route::post('/order-create', [CheckoutController::class, 'orderCreate']);

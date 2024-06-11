@@ -24,6 +24,7 @@ class Products extends Model
         'seo_title',
         'seo_description',
         'status',
+        'is_important',
         'has_variant',
     ];
 
@@ -38,4 +39,5 @@ class Products extends Model
     {
         return $this->hasMany(ProductVariant::class, 'product_id');
     }
+    
 }

@@ -91,6 +91,17 @@
                                     <label class="form-check-label" for="inlineRadio2">Inactive</label>
                                 </div>
                             </div>
+                            <div class="col-md">
+                                <small class="text-bold fw-medium d-block col-form-label">Is Important ?</small>
+                                <div class="form-check form-check-inline mt-3">
+                                    <input class="form-check-input" type="radio" name="product_important" id="inlineRadio1" value="1" />
+                                    <label class="form-check-label" for="inlineRadio1">Yes</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="product_important" id="inlineRadio2" value="0" />
+                                    <label class="form-check-label" for="inlineRadio2">No</label>
+                                </div>
+                            </div>
                         </div>
                         <div id="variants-section" style="display:none;">
                             <h3>Variants</h3>

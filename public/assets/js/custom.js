@@ -1904,3 +1904,309 @@ function confirmation(e) {
         }
     });
 }
+
+
+//Orders
+if ($("#ordersTables").length > 0) {
+    $("#ordersTables").DataTable({
+        dom: '<"card-header border-bottom p-1"<"head-label"><"dt-action-buttons text-end"B>><"user_status mt-50 width-200"><"d-flex justify-content-between align-items-center mx-0 row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>t<"d-flex justify-content-between mx-0 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+        buttons: [
+            {
+                className: "btn btn-danger me-2 DeleteALL",
+                text: "Delete",
+            },
+            {
+                extend: "collection",
+                className: "btn btn-info dropdown-toggle me-2",
+                text: "Export",
+                buttons: [
+                    {
+                        extend: "print",
+                        text: "Print",
+                        className: "dropdown-item",
+                        exportOptions: {
+                            columns: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+                        },
+                    },
+                    {
+                        extend: "csv",
+                        text: "Csv",
+                        className: "dropdown-item",
+                        exportOptions: {
+                            columns: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+                        },
+                    },
+                    {
+                        extend: "excel",
+                        text: "Excel",
+                        className: "dropdown-item",
+                        exportOptions: {
+                            columns: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+                        },
+                    },
+                    {
+                        extend: "pdf",
+                        text: "Pdf",
+                        className: "dropdown-item",
+                        exportOptions: {
+                            columns: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+                        },
+                    },
+                    {
+                        extend: "copy",
+                        text: "Copy",
+                        className: "dropdown-item",
+                        exportOptions: {
+                            columns: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+                        },
+                    },
+                ],
+                init: function (api, node, config) {
+                    $(node).removeClass("btn-secondary");
+                    $(node).parent().removeClass("btn-group");
+                    setTimeout(function () {
+                        $(node)
+                            .closest(".dt-buttons")
+                            .removeClass("btn-group")
+                            .addClass("d-inline-flex");
+                    }, 50);
+                },
+            },
+        ],
+        initComplete: function () {
+            this.api()
+                .columns(8)
+                .every(function () {
+                    var column = this;
+                    var select = $(
+                        '<select id="orderStatus" class="form-select text-capitalize"><option value=""> Select Status </option><option value="1">In-Process</option><option value="2">Completed</option><option value="3">Cancelled</option><option value="4">Refunded</option></select>'
+                    )
+                        .appendTo(".user_status")
+                        .on("change", function () {
+                            var val = $.fn.dataTable.util.escapeRegex(
+                                $(this).val()
+                            );
+                            column
+                                .search(val ? "" + val + "" : "", true, false)
+                                .draw();
+                        });
+                });
+        },
+        retrieve: true,
+        paging: true,
+        processing: true,
+        serverSide: true,
+        ajax: baseUrl + "/orders/getOrders",
+        pageLength: 10,
+        language: {
+            searchPlaceholder: "Search By Name",
+        },
+        columns: [
+            {
+                data: "id",
+            },
+            {
+                data: "order_id",
+            },
+            {
+                data: "customerName",
+            },
+            {
+                data: "total_amount",
+            },
+            {
+                data: "pay_amount",
+            },
+            {
+                data: "discount_amount",
+            },
+            {
+                data: "payment_type",
+            },
+            {
+                data: "created_at",
+            },
+            {
+                data: "status",
+            },
+            {
+                data: "totalItems",
+            },
+        ],
+        aoColumnDefs: [
+            {
+                targets: 0,
+                orderable: false,
+                checkboxes: {
+                    selectRow: true,
+                },
+            },
+            {
+                aTargets: [9],
+                mData: "id",
+                mRender: function (data, type, row, meta) {
+                    let items = baseUrl + "/orders/items/" + row.id;
+                    return (
+                        '<a class="action-class view-access editIcon" href="' +
+                        items +
+                        '" id="items_' +
+                        row.id +
+                        '">' +
+                        '<span class="badge bg-label-success">' + row.totalItems + '</span>' +
+                        "</a>"
+                    );
+                },
+            },
+            {
+                aTargets: [8],
+                mData: "id",
+                mRender: function (data, type, row, meta) {
+                    if (row.status == 1) {
+                        return '<span class="badge bg-success bg-glow">In-Process</span>';
+                    } else if (row.status == 2) {
+                        return '<span class="badge bg-success bg-glow">Completed</span>';
+                    } else if (row.status == 3) {
+                        return '<span class="badge bg-success bg-glow">Cancelled</span>';
+                    } else if (row.status == 4) {
+                        return '<span class="badge bg-success bg-glow">Refunded</span>';
+                    }
+                },
+            },
+            {
+                aTargets: [10],
+                mData: "id",
+                mRender: function (data, type, row, meta) {
+                    let deleteUrl = baseUrl + "/orders/delete/" + row.id;
+                    let viewUrl = baseUrl + "/orders/view/" + row.id;
+
+                    return (
+                        '<a class="action-class view-access editIcon me-2" href="' +
+                        viewUrl +
+                        '" id="view_' +
+                        row.id +
+                        '"><i class="far fa-eye" aria-hidden="true"></i></a><a class="delete-record action-class deleteIcon" href="javascript:void(0)" data-url="' +
+                        deleteUrl +
+                        '" onclick="confirmation(this);"  data-type="orders" id="delete_record_' +
+                        row.id +
+                        '"><i class="fa fa-trash" aria-hidden="true"></i></a>'
+                    );
+                },
+            },
+        ],
+        select: {
+            style: "multi",
+        },
+        order: [[1, "asc"]],
+    });
+
+    $(".DeleteALL").on("click", function (e) {
+        let dt_user_table = $("#ordersTables").DataTable();
+        var rows_selected = dt_user_table.column(0).checkboxes.selected();
+        console.log(rows_selected.length);
+        if (rows_selected.length < 1) {
+            let html =
+                '<div class="toast toast-autohide show" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="false"><div class="toast-header" style="background: #ff0000;color: #fafbfd;"><strong class="me-auto">Danger!</strong><small class="text-muted" style="color:#ffffff!important">just now</small><button type="button" class="ms-1 btn-close" data-bs-dismiss="toast" aria-label="Close"></button></div><div class="toast-body">Please select at least one</div></div>';
+            $(".messageShowAlert").append(html);
+            setTimeout(function () {
+                $(".toast-autohide").remove();
+            }, 3000);
+            return false;
+        }
+        rows_selected = rows_selected.join(",");
+        rows_selected = rows_selected.split(",");
+        Swal.fire({
+            title: "Are you sure ?",
+            text: "You want to delete",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#3085d6",
+            cancelButtonColor: "#d33",
+            cancelButtonText: "No",
+            confirmButtonText: "Yes",
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    type: "POST",
+                    url: baseUrl + "/orders/delete-all",
+                    data: {
+                        _token: $('meta[name="csrf-token"]').attr("content"),
+                        ids: rows_selected,
+                    },
+                    success: function (response) {
+                        if (response.success == true) {
+                            let html =
+                                '<div class="toast toast-autohide show" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="false"><div class="toast-header" style="background: #288900;color: #f1f1f1;"><strong class="me-auto">Success</strong><small class="text-muted" style="color:#ffffff!important">just now</small><button type="button" class="ms-1 btn-close" data-bs-dismiss="toast" aria-label="Close"></button></div><div class="toast-body">' +
+                                response.message +
+                                "</div></div>";
+                            $(".messageShowAlert").append(html);
+                            setTimeout(function () {
+                                $(".toast-autohide").remove();
+                            }, 3000);
+                            $(location).attr("href", window.location);
+                        } else {
+                            let html =
+                                '<div class="toast toast-autohide show" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="false"><div class="toast-header" style="background: #ff0000;color: #fafbfd;"><strong class="me-auto">Danger!</strong><small class="text-muted" style="color:#ffffff!important">just now</small><button type="button" class="ms-1 btn-close" data-bs-dismiss="toast" aria-label="Close"></button></div><div class="toast-body">' +
+                                response.message +
+                                "</div></div>";
+                            $(".messageShowAlert").append(html);
+                            setTimeout(function () {
+                                $(".toast-autohide").remove();
+                            }, 3000);
+                            $(location).attr("href", window.location);
+                        }
+                    },
+                });
+            }
+        });
+    });
+}
+
+function viewOrderDetailModal(element) {
+    var urlRequest = element.getAttribute('data-url');
+
+    $.ajax({
+        type: "GET",
+        url: urlRequest,
+        success: function (data) {
+            let order = data.order;
+            let orderItem = data.orderItem;
+            let product = data.product;
+
+            let htmlContent = '<h2>Order #' + order.order_id + '</h2>';
+
+            // Product details
+            htmlContent += '<h3>Product Details</h3>';
+            htmlContent += '<p><strong>Name:</strong> ' + product.name + '</p>';
+            if (product.variants) {
+                htmlContent += '<p><strong>Sale Price:</strong> ' + product.variants.sale_price + '</p>';
+            } else {
+                htmlContent += '<p><strong>Sale Price:</strong> ' + product.sale_price + '</p>';
+            }
+            htmlContent += '<p><strong>Description:</strong> ' + product.description + '</p>';
+
+            // Variation details (if available)
+            if (product.variants) {
+                htmlContent += '<h3>Variation</h3>';
+                htmlContent += '<p><strong>Variation Name:</strong> ' + product.variants.name + '</p>';
+                htmlContent += '<p><strong>Variation Price:</strong> ' + product.variants.sale_price + '</p>';
+                // Add more variation details as needed
+            }
+
+            // Images (if available)
+            if (product.images && product.images.length > 0) {
+                htmlContent += '<h3>Images</h3>';
+                htmlContent += '<div class="row">';
+                product.images.forEach(function (image) {
+                    htmlContent += '<div class="col-md-3"><img src="' + image.image_path + '" alt="Product Image" class="img-fluid"></div>';
+                });
+                htmlContent += '</div>';
+            }
+
+            $('#viewOrderDetailModal .modal-body').html(htmlContent);
+            $('#viewOrderDetailModal').modal('show');
+        },
+        error: function (error) {
+            console.error("Error fetching order details:", error);
+        }
+    });
+}

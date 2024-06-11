@@ -21,6 +21,7 @@ return new class extends Migration
             $table->text('seo_description')->nullable();
             $table->integer('has_variant')->nullable()->default(0);
             $table->integer('status')->nullable()->comment('0=Inactive,1=Active,2=trash');
+            $table->integer('is_important')->nullable()->comment('0=no,1=yes,2=trash');
             $table->softDeletes();
             $table->timestamps();
         });

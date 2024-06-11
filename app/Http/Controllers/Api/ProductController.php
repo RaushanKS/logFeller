@@ -30,7 +30,7 @@ class ProductController extends Controller
             $products = Products::where('status', 1)
                 ->whereNull('deleted_at')
                 ->with(['images', 'variants'])
-                ->take(10)
+                // ->take(10)
                 ->get(['id', 'name', 'slug', 'description', 'sale_price', 'has_variant']);
 
             foreach ($products as $product) {

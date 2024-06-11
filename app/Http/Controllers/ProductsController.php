@@ -113,6 +113,7 @@ class ProductsController extends Controller
             $product->description = $request->input('product_description');
             $product->has_variant = 1;
             $product->status = $request->input('product_status');
+            $product->is_important = ($request->input('product_important')) ? $request->input('product_important') : 0;
 
             $product->save();
 
@@ -133,6 +134,7 @@ class ProductsController extends Controller
             $product->description = $request->input('product_description');
             $product->has_variant = 0;
             $product->status = $request->input('product_status');
+            $product->is_important = ($request->input('product_important')) ? $request->input('product_important') : 0;
             $product->save();
         }
 
@@ -332,6 +334,7 @@ class ProductsController extends Controller
             $product->description = $request->input('product_description');
             $product->has_variant = 1;
             $product->status = $request->input('product_status');
+            $product->is_important = ($request->input('product_important')) ? $request->input('product_important') : 0;
 
             $product->save();
 
@@ -357,6 +360,7 @@ class ProductsController extends Controller
             $product->description = $request->input('product_description');
             $product->has_variant = 0;
             $product->status = $request->input('product_status');
+            $product->is_important = ($request->input('product_important')) ? $request->input('product_important') : 0;
             $product->save();
 
             if ($product->save()) {

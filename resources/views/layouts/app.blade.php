@@ -487,6 +487,27 @@
                             <div data-i18n="Enquiries">Enquiries</div>
                         </a>
                     </li>
+
+                    @if( Route::currentRouteName()=='orders'
+                        // || Route::currentRouteName()=='enquiries.deleteEnquiriesAll'
+                        // || Route::currentRouteName()=='enquiries.delete'  
+                    )
+                    @php
+                    $ordersAdd = 'active';
+                    @endphp
+                    @else
+                    @php
+                    $ordersAdd = '';
+                    @endphp
+                    @endif
+
+                    <li class="menu-item {{$ordersAdd}}">
+                        <a href="{{ url('/orders') }}" class="menu-link">
+                            {{-- <i class="menu-icon tf-icons ti ti-contacts"></i> --}}
+                            <i class="menu-icon tf-icons ti ti-shopping-cart"></i>
+                            <div data-i18n="Orders">Orders</div>
+                        </a>
+                    </li>
                     {{-- <li class="menu-item">
                         <a href="app-calendar.html" class="menu-link">
                             <i class="menu-icon tf-icons ti ti-calendar"></i>
