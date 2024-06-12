@@ -49,9 +49,9 @@ function calculateDistanceFromCardiff($postcode)
         $distanceInMeters = $data['rows'][0]['elements'][0]['distance']['value'];
         // Convert meters to miles (1 mile = 1609.34 meters)
         $distanceInMiles = $distanceInMeters / 1609.34;
-        echo "Distance: " . $distanceInMiles . " miles";
+        // echo "Distance: " . $distanceInMiles . " miles";
     } else {
-        echo "Error: Distance not found in the response.";
+        // echo "Error: Distance not found in the response.";
     }
 
 }

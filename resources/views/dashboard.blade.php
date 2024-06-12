@@ -915,5 +915,59 @@
                             </div>
                             <!--/ Projects table --> --}}
                         </div>
+                        <div class="row">
+                            <!-- Statistics -->
+                            <div class="col-xl-12 mb-4 col-lg-7 col-12">
+                                <div class="card h-100">
+                                <div class="card-header">
+                                    <div class="d-flex justify-content-between mb-3">
+                                    <h5 class="card-title mb-0">Orders</h5>
+                                    {{-- <small class="text-muted">Updated 1 month ago</small> --}}
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row gy-3">
+                                    <div class="col-md-3 col-6">
+                                        <div class="d-flex align-items-center">
+                                        <div class="badge rounded-pill bg-label-primary me-3 p-2"><i class="ti ti-git-fork ti-sm"></i></div>
+                                        <div class="card-info">
+                                            <h5 class="mb-0">{{$totalOrders}}</h5>
+                                            <small>Total Orders</small>
+                                        </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 col-6">
+                                        <div class="d-flex align-items-center">
+                                        <div class="badge rounded-pill bg-label-info me-3 p-2"><i class="ti ti-check ti-sm"></i></div>
+                                        <div class="card-info">
+                                            <h5 class="mb-0">{{$completedOrders}}</h5>
+                                            <small>Completed Orders</small>
+                                        </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 col-6">
+                                        <div class="d-flex align-items-center">
+                                        <div class="badge rounded-pill bg-label-danger me-3 p-2"><i class="ti ti-alert-triangle ti-sm"></i></div>
+                                        <div class="card-info">
+                                            <h5 class="mb-0">{{$cancelledOrders}}</h5>
+                                            <small>Cancelled Orders</small>
+                                        </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 col-6">
+                                        <div class="d-flex align-items-center">
+                                        <div class="badge rounded-pill bg-label-success me-3 p-2"><i class="ti ti-clock ti-sm"></i></div>
+                                        <div class="card-info">
+                                            <h5 class="mb-0">{{$inprocessOrders}}</h5>
+                                            <small>In Process Orders</small>
+                                        </div>
+                                        </div>
+                                    </div>
+                                    </div>
+                                </div>
+                                </div>
+                            </div>
+                            <!--/ Statistics -->
+                        </div>
 
 @endsection

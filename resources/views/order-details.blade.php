@@ -15,13 +15,17 @@
 
             <div class="d-flex flex-column justify-content-center gap-2 gap-sm-0">
                 <h5 class="mb-1 mt-3 d-flex flex-wrap gap-2 align-items-end">Order #{{$order->order_id}} 
-                    <span class="badge bg-label-success">Paid</span> <span class="badge bg-label-info">Ready to Pickup</span>
+                    {{-- <span class="badge bg-label-success">Paid</span> <span class="badge bg-label-info">Ready to Pickup</span> --}}
                 </h5>
-                <p class="text-body">Aug 17, <span id="orderYear"></span>, 5:48 (ET)</p>
+                <?php
+                $timestemp = strtotime($order->created_at);
+                $date = date('d M y', $timestemp);
+                ?>
+                <p class="text-body">{{$date}} <span id="orderYear"></span></p>
             </div>
-            <div class="d-flex align-content-center flex-wrap gap-2">
+            {{-- <div class="d-flex align-content-center flex-wrap gap-2">
                 <button class="btn btn-label-danger delete-order">Delete Order</button>
-            </div>
+            </div> --}}
         </div>
 
         <!-- Order Details Table -->
@@ -31,7 +35,7 @@
                 <div class="card mb-4">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="card-title m-0">Order details</h5>
-                        <h6 class="m-0"><a href=" javascript:void(0)">Edit</a></h6>
+                        {{-- <h6 class="m-0"><a href=" javascript:void(0)">Edit</a></h6> --}}
                     </div>
                     <?php
                     $subTotalAmount = 0.00;
@@ -140,15 +144,15 @@
                             <div class="order-calculations">
                                 <div class="d-flex justify-content-between mb-2">
                                     <span class="w-px-100 text-heading">Total:</span>
-                                    <h6 class="mb-0">£{{$subTotalAmount}}</h6>
+                                    <h6 class="mb-0">£{{number_format($subTotalAmount, 2)}}</h6>
                                 </div>
                                 <div class="d-flex justify-content-between mb-2">
                                     <span class="w-px-100 text-heading">Discount:</span>
-                                    <h6 class="mb-0">£{{($order->discount_amount) ? $order->discount_amount : 0}}</h6>
+                                    <h6 class="mb-0">£{{($order->discount_amount) ? number_format($order->discount_amount, 2) : 0}}</h6>
                                 </div>
                                 <div class="d-flex justify-content-between">
                                     <h6 class="w-px-100 mb-0">Subtotal:</h6>
-                                    <h6 class="mb-0">£{{$subTotalAmount-$order->discount_amount}}</h6>
+                                    <h6 class="mb-0">£{{number_format($subTotalAmount-$order->discount_amount, 2)}}</h6>
                                 </div>
                             </div>
                         </div>
@@ -277,8 +281,8 @@
         <div class="col-lg-4 col-md-6">
             <!-- Extra Large Modal -->
             <div class="modal fade" id="viewOrderDetailModal" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog modal-lg modal-simple" role="document">
-                    <div class="modal-content p-3 p-md-5">
+                <div class="modal-dialog modal-lg" role="document">
+                    <div class="modal-content">
                     <div class="modal-header">
                         {{-- <h5 class="modal-title" id="exampleModalLabel4">Enquiry Details</h5> --}}
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>

@@ -31,6 +31,7 @@ use Tymon\JWTAuth\Exceptions\JWTException;
 class CheckoutController extends Controller
 {
     private $user_id;
+
     public function __construct()
     {
         $this->middleware('auth:api', ['except' => ['addToCart', 'updateCart', 'removeFromCart', 'fetchCarts', 'orderCreate', 'paymentSuccess', 'orderUpdate', 'couponApply', 'couponRemove', 'orderList', 'orderItemsList', 'orderCancel', 'fetchPaymentDetails', 'fetchCoupons']]);
@@ -45,6 +46,102 @@ class CheckoutController extends Controller
         });
     }
 
+    // public function addToCart(Request $request)
+    // {
+    //     try {
+    //         $inputs = $request->all();
+    //         $validatedData = Validator::make($inputs, [
+    //             'product_id' => 'required|exists:products,id',
+    //             'variant_id' => 'nullable|exists:product_variants,id',
+    //             'quantity' => 'required|integer|min:1'
+    //         ]);
+
+    //         if ($validatedData->fails()) {
+    //             $errors = $validatedData->errors();
+    //             $transformed = [];
+    //             foreach ($errors->all() as $message) {
+    //                 $transformed[] = $message;
+    //             }
+    //             return response()->json(['status' => 'failed', 'message' => $transformed], 422);
+    //         }
+
+    //         $userId = $this->user_id;
+    //         $productId = $inputs['product_id'];
+    //         $variantId = Arr::get($inputs, 'variant_id'); // Use Arr::get to safely access 'variant_id'
+    //         $quantity = $inputs['quantity'];
+
+    //         $productExists = Products::where('is_important', 1)->where('status', 1)->whereNull('deleted_at')->get();
+    //         foreach($productExists as $productExist) {
+    //             $cartItems = Cart::where('productId', $productExist->id)->first();
+    //             // print_r($cartItems); exit;
+    //             $productName = $productExist->name;
+    //             if(empty($cartItems)) {
+    //                 return response()->json(['status' => 'failed', 'message' => 'Please add ' . $productName . ' first to proceed.'], 422);
+    //             }
+    //         }
+
+
+    //         // Fetch the product to check if it has variants 
+    //         $product = Products::find($productId);
+
+    //         if ($product->has_variant == 1) {
+    //             if (empty($variantId)) {
+    //                 return response()->json(['status' => 'failed', 'message' => 'Variant ID is required for products with variants.'], 422);
+    //             }
+
+    //             $variant = ProductVariant::where('product_id', $productId)->where('id', $variantId)->first();
+
+    //             if (empty($variant)) {
+    //                 return response()->json(['status' => 'failed', 'message' => 'This product variant combination does not exist.'], 422);
+    //             }
+
+    //             $price = $variant->sale_price;
+    //             $name = $product->name . ' - ' . $variant->name;
+    //         } else {
+    //             if (!empty($variantId)) {
+    //                 return response()->json(['status' => 'failed', 'message' => 'Variant ID should not be provided for products without variants.'], 422);
+    //             }
+
+    //             $price = $product->sale_price;
+    //             $name = $product->name;
+    //         }
+
+    //         $cartData = Cart::where('productId', $productId)
+    //             ->where('user_id', $userId)
+    //             ->where('variationData', $variantId)
+    //             ->first();
+
+    //         if ($cartData) {
+    //             $cartData->quantity += $quantity;
+    //             $cartData->total = $cartData->quantity * $price;
+
+    //             if ($cartData->save()) {
+    //                 return response()->json(['status' => 'success', 'message' => 'Product added to cart successfully', 'data' => $cartData], 201);
+    //             } else {
+    //                 return response()->json(['status' => 'failed', 'message' => 'Something went wrong, please try again.'], 422);
+    //             }
+    //         } else {
+    //             $cart = Cart::create([
+    //                 'user_id' => $userId,
+    //                 'productId' => $productId,
+    //                 'variationData' => $variantId,
+    //                 'name' => $name,
+    //                 'price' => $price,
+    //                 'quantity' => $quantity,
+    //                 'total' => $price * $quantity,
+    //             ]);
+
+    //             if ($cart) {
+    //                 return response()->json(['status' => 'success', 'message' => 'Product added to cart successfully', 'data' => $cart], 201);
+    //             } else {
+    //                 return response()->json(['status' => 'failed', 'message' => 'Something went wrong, please try again.'], 422);
+    //             }
+    //         }
+    //     } catch (Exception $e) {
+    //         return response()->json(['status' => 'failed', 'message' => $e->getMessage()], 500);
+    //     }
+    // }
+
     public function addToCart(Request $request)
     {
         try {
@@ -56,88 +153,92 @@ class CheckoutController extends Controller
             ]);
 
             if ($validatedData->fails()) {
-                $errors = $validatedData->errors();
-                $transformed = [];
-                foreach ($errors->all() as $message) {
-                    $transformed[] = $message;
-                }
-                return response()->json(['status' => 'failed', 'message' => $transformed], 422);
+                return response()->json(['status' => 'failed', 'message' => $validatedData->errors()->all()], 422);
             }
 
             $userId = $this->user_id;
             $productId = $inputs['product_id'];
-            $variantId = Arr::get($inputs, 'variant_id'); // Use Arr::get to safely access 'variant_id'
+            $variantId = Arr::get($inputs, 'variant_id');
             $quantity = $inputs['quantity'];
 
-            $productExists = Products::where('is_important', 1)->where('status', 1)->whereNull('deleted_at')->get();
-            foreach($productExists as $productExist) {
-                $cartItems = Cart::where('productId', $productExist->id)->first();
-                // print_r($cartItems); exit;
-                $productName = $productExist->name;
-                if(empty($cartItems)) {
-                    return response()->json(['status' => 'failed', 'message' => 'Please add ' . $productName . ' first to proceed.'], 422);
-                }
-            }
-
-
-            // Fetch the product to check if it has variants 
-            $product = Products::find($productId);
-
-            if ($product->has_variant == 1) {
-                if (empty($variantId)) {
-                    return response()->json(['status' => 'failed', 'message' => 'Variant ID is required for products with variants.'], 422);
-                }
-
-                $variant = ProductVariant::where('product_id', $productId)->where('id', $variantId)->first();
-
-                if (empty($variant)) {
-                    return response()->json(['status' => 'failed', 'message' => 'This product variant combination does not exist.'], 422);
-                }
-
-                $price = $variant->sale_price;
-                $name = $product->name . ' - ' . $variant->name;
-            } else {
-                if (!empty($variantId)) {
-                    return response()->json(['status' => 'failed', 'message' => 'Variant ID should not be provided for products without variants.'], 422);
-                }
-
-                $price = $product->sale_price;
-                $name = $product->name;
-            }
-
-            $cartData = Cart::where('productId', $productId)
-                ->where('user_id', $userId)
-                ->where('variationData', $variantId)
-                ->first();
-
-            if ($cartData) {
-                $cartData->quantity += $quantity;
-                $cartData->total = $cartData->quantity * $price;
-
-                if ($cartData->save()) {
-                    return response()->json(['status' => 'success', 'message' => 'Product added to cart successfully', 'data' => $cartData], 201);
+            $importantProducts = Products::where('is_important', 1)
+                ->where('status', 1)
+                ->whereNull('deleted_at')
+                ->get();
+            $cartItems = Cart::where('user_id', $userId)->get();
+            $hasImportantProductInCart = $cartItems->contains(function ($cartItem) use ($importantProducts) {
+                return $importantProducts->contains('id', $cartItem->productId);
+            });
+            // print_r($importantProducts); exit;
+            if ($cartItems->isEmpty() || !$hasImportantProductInCart) {
+                if ($importantProducts->contains('id', $productId)) {
+                    return $this->addProductToCart($userId, $productId, $variantId, $quantity);
                 } else {
-                    return response()->json(['status' => 'failed', 'message' => 'Something went wrong, please try again.'], 422);
-                }
-            } else {
-                $cart = Cart::create([
-                    'user_id' => $userId,
-                    'productId' => $productId,
-                    'variationData' => $variantId,
-                    'name' => $name,
-                    'price' => $price,
-                    'quantity' => $quantity,
-                    'total' => $price * $quantity,
-                ]);
-
-                if ($cart) {
-                    return response()->json(['status' => 'success', 'message' => 'Product added to cart successfully', 'data' => $cart], 201);
-                } else {
-                    return response()->json(['status' => 'failed', 'message' => 'Something went wrong, please try again.'], 422);
+                    $importantProductNames = $importantProducts->pluck('name')->toArray();
+                    $message = 'Please add ' . implode(', ', $importantProductNames) . ' first to proceed.';
+                    return response()->json(['status' => 'failed', 'message' => $message], 422);
                 }
             }
+            return $this->addProductToCart($userId, $productId, $variantId, $quantity);
         } catch (Exception $e) {
             return response()->json(['status' => 'failed', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    private function addProductToCart($userId, $productId, $variantId, $quantity)
+    {
+        $product = Products::find($productId);
+        if ($product->has_variant) {
+            if (empty($variantId)) {
+                return response()->json(['status' => 'failed', 'message' => 'Variant ID is required for products with variants.'], 422);
+            }
+
+            $variant = ProductVariant::where('product_id', $productId)->where('id', $variantId)->first();
+            if (!$variant) {
+                return response()->json(['status' => 'failed', 'message' => 'This product variant combination does not exist.'], 422);
+            }
+
+            $price = $variant->sale_price;
+            $name = $product->name . ' - ' . $variant->name;
+        } else {
+            if ($variantId) {
+                return response()->json(['status' => 'failed', 'message' => 'Variant ID should not be provided for products without variants.'], 422);
+            }
+
+            $price = $product->sale_price;
+            $name = $product->name;
+        }
+
+        $cartData = Cart::where('productId', $productId)
+            ->where('user_id', $userId)
+            ->where('variationData', $variantId)
+            ->first();
+
+        if ($cartData) {
+            $cartData->quantity += $quantity;
+            $cartData->total = $cartData->quantity * $price;
+
+            if ($cartData->save()) {
+                return response()->json(['status' => 'success', 'message' => 'Product added to cart successfully', 'data' => $cartData], 201);
+            } else {
+                return response()->json(['status' => 'failed', 'message' => 'Something went wrong, please try again.'], 422);
+            }
+        } else {
+            $cart = Cart::create([
+                'user_id' => $userId,
+                'productId' => $productId,
+                'variationData' => $variantId,
+                'name' => $name,
+                'price' => $price,
+                'quantity' => $quantity,
+                'total' => $price * $quantity,
+            ]);
+
+            if ($cart) {
+                return response()->json(['status' => 'success', 'message' => 'Product added to cart successfully', 'data' => $cart], 201);
+            } else {
+                return response()->json(['status' => 'failed', 'message' => 'Something went wrong, please try again.'], 422);
+            }
         }
     }
 
@@ -350,7 +451,7 @@ class CheckoutController extends Controller
                         $couponInfo[] = array('discountId' => $discountId, 'couponId' => (int) $couponId, 'subtotalAmount' => $salePrice, 'discountAmount' => $discountAmount, 'grandTotal' => $grandTotal, 'applyCouponInfo' => $discount);
                     }
                 } else {
-                    $couponInfo[] = array('discountId' => "", 'couponId' => "", 'subtotalAmount' => $subTotal, 'discountAmount' => 0.00, 'grandTotal' => $salePrice, 'applyCouponInfo' => (object) array());
+                    $couponInfo[] = array('discountId' => "", 'couponId' => "", 'subtotalAmount' => $subTotal, 'discountAmount' => 0.00, 'grandTotal' => $subTotal, 'applyCouponInfo' => (object) array());
                 }
 
                 return response()->json(['status' => 'success', 'message' => 'Cart items retrieved successfully', 'subtotalAmount' => $subTotal, 'data' => $cartDataArr, 'couponInfo' => $couponInfo], 200);
@@ -639,7 +740,9 @@ class CheckoutController extends Controller
             }
 
             $address = UserAddress::where('id', $inputs['addressId'])->first();
-            $applyCoupon = CouponApply::where('id', $inputs['couponId'])->first();
+            $applyCoupon = CouponApply::where('coupon_id', $inputs['couponId'])->first();
+            print_r($applyCoupon);
+            exit;
 
             $userId = $this->user_id;
             $userName = User::where('id', $userId)->pluck('name');
@@ -728,7 +831,9 @@ class CheckoutController extends Controller
                                 'status' => 1,
                             ]);
 
-                            // // Remove item from cart after adding to order
+                            // delete coupon
+                            $res = CouponApply::where('user_id', $userId)->where('coupon_id', $discount->id)->forceDelete();
+                            // Remove item from cart after adding to order
                             $deleteFromCart = Cart::where('user_id', $userId)
                                 ->where('productId', $productId)
                                 ->delete();
@@ -801,7 +906,7 @@ class CheckoutController extends Controller
     //     }
     // }
 
-    public function fetchCoupons(Request $request) 
+    public function fetchCoupons(Request $request)
     {
         try {
             $inputs = $request->all();
@@ -820,10 +925,10 @@ class CheckoutController extends Controller
                 ->where('end_date', '>=', $now)
                 ->get();
 
-            foreach($coupons as $coupon) {
-                if($coupon->discount_type == 'percentage') {
+            foreach ($coupons as $coupon) {
+                if ($coupon->discount_type == 'percentage') {
                     $discount = "{$coupon->discount_percent}{$percentSymbol}";
-                } elseif($coupon->discount_type == 'fixed') {
+                } elseif ($coupon->discount_type == 'fixed') {
                     $discount = "{$currencySymbol}{$coupon->discount_amount}";
                 }
 
@@ -842,7 +947,7 @@ class CheckoutController extends Controller
                     'end_date' => $coupon->end_date,
                 ];
 
-                $couponArr[] = $couponData; 
+                $couponArr[] = $couponData;
             }
             return response()->json(['status' => 'success', 'message' => 'Record Found', 'totalCoupons' => $totalCoupons, 'data' => ['coupons' => $couponArr]], 200);
         } catch (Exception $e) {
@@ -858,46 +963,55 @@ class CheckoutController extends Controller
             $currencySymbol = '£';
             $percentSymbol = '%';
             $orderArr = array();
-                $orders = OrderItems::join('products', 'products.id', '=', 'order_items.product_id')->join('orders', 'orders.id', '=', 'order_items.order_id')->where('orders.user_id', $userId)->select(['order_items.*', 'products.id as productId', 'products.name', 'products.slug', 'products.description', 'orders.user_id',])->orderBy('order_items.id', 'desc')->get();
-                // echo '<pre>';
-                // print_r($orders);
-                // exit;
+            $orders = OrderItems::join('products', 'products.id', '=', 'order_items.product_id')->join('orders', 'orders.id', '=', 'order_items.order_id')->where('orders.user_id', $userId)->select(['order_items.*', 'products.id as productId', 'products.name', 'products.slug', 'products.description', 'orders.user_id',])->orderBy('order_items.id', 'desc')->get();
+            // echo '<pre>';
+            // print_r($orders);
+            // exit;
 
-                if ($orders) {
-                    foreach ($orders as $order) {
-                        $ordersData = Orders::where('id', $order->order_id)->first();
-                        $totalAmount = $ordersData->pay_amount;
-                        $totalPayAmount = $ordersData->total_amount;
-                        $payPercent = ($totalPayAmount * 100) / $totalAmount;
-                        $payPercentRound = number_format((float) $payPercent, 2, '.', '');
-                        $discountPercent = 100 - $payPercentRound;
-                        $saleAmount = ($discountPercent > 0) ? ($order->quantity * $order->sale_price * $discountPercent) / 100 : number_format((float) $order->quantity * $order->sale_price, 2, '.', '');
-                        // echo $order->user_id; exit;
-                        //echo'<pre>';print_r($saleAmount);exit;
-                        
-                        $salePrice = "{$currencySymbol}{$order->sale_price}";
-                        $orderAmount = "{$currencySymbol}{$saleAmount}";
-                        $orderArr[] = array(
-                            'id' => $order->id,
-                            'user_id' => $order->user_id,
-                            'orderId' => $order->order_id,
-                            'order_number' => $order->order_number,
-                            'quantity' => $order->quantity,
-                            'sale_price' => $salePrice,
-                            'order_amount' => $orderAmount,
-                            // 'featured_image' => ($order->featured_image) ? asset($order->featured_image) : null,
-                            // 'sku' => $order->sku,
-                            'name' => $order->name,
-                            'slug' => $order->slug,
-                            'status' => $order->status,
-                            'productId' => $order->productId,
-                            'createdAt' => Carbon::createFromFormat('Y-m-d H:i:s', $order->created_at)->format('Y-m-d'),
-                            'updateAt' => Carbon::createFromFormat('Y-m-d H:i:s', $order->updated_at)->format('Y-m-d'),
-                        );
+            if ($orders) {
+                foreach ($orders as $order) {
+                    $ordersData = Orders::where('id', $order->order_id)->first();
+                    $totalAmount = $ordersData->pay_amount;
+                    $totalPayAmount = $ordersData->total_amount;
+                    $payPercent = ($totalPayAmount * 100) / $totalAmount;
+                    $payPercentRound = number_format((float) $payPercent, 2, '.', '');
+                    $discountPercent = 100 - $payPercentRound;
+                    $saleAmount = ($discountPercent > 0) ? ($order->quantity * $order->sale_price * $discountPercent) / 100 : number_format((float) $order->quantity * $order->sale_price, 2, '.', '');
+                    // echo $order->user_id; exit;
+                    //echo'<pre>';print_r($saleAmount);exit;
+
+                    $salePrice = "{$currencySymbol}{$order->sale_price}";
+                    $orderAmount = "{$currencySymbol}{$saleAmount}";
+
+
+                    $firstProductImage = ProductImage::where('product_id', $order->product_id)->first();
+                    if ($firstProductImage) {
+                        $prodImg = $firstProductImage->image_path;
+                    } else {
+                        $prodImg = null;
                     }
 
+                    $orderArr[] = array(
+                        'id' => $order->id,
+                        'user_id' => $order->user_id,
+                        'orderId' => $order->order_id,
+                        'order_number' => $order->order_number,
+                        'quantity' => $order->quantity,
+                        'sale_price' => $salePrice,
+                        'order_amount' => $orderAmount,
+                        'featured_image' => ($prodImg) ? url($prodImg) : null,
+                        // 'sku' => $order->sku,
+                        'name' => $order->name,
+                        'slug' => $order->slug,
+                        'status' => $order->status,
+                        'productId' => $order->productId,
+                        'createdAt' => Carbon::createFromFormat('Y-m-d H:i:s', $order->created_at)->format('Y-m-d'),
+                        'updateAt' => Carbon::createFromFormat('Y-m-d H:i:s', $order->updated_at)->format('Y-m-d'),
+                    );
+                }
+
                 $couponDetails = [];
-                if(!empty($ordersData->couponId)) {
+                if (!empty($ordersData->couponId)) {
                     $discountCoupon = Discount::where('id', $ordersData->couponId)->first();
 
                     if ($discountCoupon->discount_type == 'percentage') {
@@ -931,7 +1045,7 @@ class CheckoutController extends Controller
                     'paymentStatus' => $ordersData->payment_status,
                     'discountCoupon' => $couponDetails,
                 );
-                }
+            }
             return response()->json(['status' => 'success', 'message' => '', 'data' => ['orders' => $orderArr, 'paymentDetails' => $paymentArr]], 200);
         } catch (Exception $e) {
             return response()->json(['status' => 'failed', 'message' => $e->getMessage()], 500);
@@ -954,10 +1068,10 @@ class CheckoutController extends Controller
 
                 $orderIdGet = $orders->id;
                 $addressId = $orders->address_id;
-                
+
                 $userAddress = UserAddress::where('id', $addressId)->withTrashed()->first();
 
-                $OrderItems = OrderItems::join('products', 'products.id', '=', 'order_items.product_id')->where('order_number', $orderNumber)->orderBy('order_items.id', 'desc')->get(['order_items.*', 'products.name', 'products.slug','products.description']);
+                $OrderItems = OrderItems::join('products', 'products.id', '=', 'order_items.product_id')->where('order_number', $orderNumber)->orderBy('order_items.id', 'desc')->get(['order_items.*', 'products.name', 'products.slug', 'products.description']);
                 if ($OrderItems) {
                     foreach ($OrderItems as $orderItem) {
                         // $vendorId = $orderItem->vendor_id;
@@ -991,6 +1105,14 @@ class CheckoutController extends Controller
                         $finalAmount = $saleAmount - $discountAmount;
                         $finalAmount = number_format((float) $finalAmount, 2, '.', '');
                         // echo($discountAmount); exit;
+
+                        $firstProductImage = ProductImage::where('product_id', $orderItem->product_id)->first();
+                        if ($firstProductImage) {
+                            $prodImg = $firstProductImage->image_path;
+                        } else {
+                            $prodImg = null;
+                        }
+
                         $itemArr = array(
                             'id' => $orderItem->id,
                             'user_id' => $orders->user_id,
@@ -1010,7 +1132,7 @@ class CheckoutController extends Controller
                             'status' => $orderItem->status,
                             'productName' => ($orderItem->name) ? $orderItem->name : null,
                             'productDescription' => $orderItem->description,
-                            // 'productImage' => ($orderItem->featured_image) ? asset($orderItem->featured_image) : null,
+                            'productImage' => ($prodImg) ? url($prodImg) : null,
                             'variation' => $variationData,
                             'addressShipping' => array(
                                 'id' => $userAddress->id,
@@ -1028,7 +1150,6 @@ class CheckoutController extends Controller
                         );
                     }
                 }
-                
             }
             return response()->json(['status' => 'success', 'message' => '', 'data' => ['orders' => $itemArr]], 200);
         } catch (Exception $e) {

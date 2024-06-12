@@ -2045,15 +2045,16 @@ if ($("#ordersTables").length > 0) {
                 aTargets: [9],
                 mData: "id",
                 mRender: function (data, type, row, meta) {
-                    let items = baseUrl + "/orders/items/" + row.id;
+                    let items = baseUrl + "/orders/items/view/" + row.id;
                     return (
-                        '<a class="action-class view-access editIcon" href="' +
-                        items +
-                        '" id="items_' +
-                        row.id +
-                        '">' +
-                        '<span class="badge bg-label-success">' + row.totalItems + '</span>' +
-                        "</a>"
+                        '<span class="badge bg-label-success">' + row.totalItems + '</span>'
+                        // '<a class="action-class view-access editIcon" href="' +
+                        // items +
+                        // '" id="items_' +
+                        // row.id +
+                        // '">' +
+                        // '<span class="badge bg-label-success">' + row.totalItems + '</span>' +
+                        // "</a>"
                     );
                 },
             },
@@ -2171,33 +2172,32 @@ function viewOrderDetailModal(element) {
             let order = data.order;
             let orderItem = data.orderItem;
             let product = data.product;
+            let variation = data.variation;
 
-            let htmlContent = '<h2>Order #' + order.order_id + '</h2>';
+            let htmlContent = '<h2>Order #' + order.order_id + '</h2><hr>';
 
             // Product details
-            htmlContent += '<h3>Product Details</h3>';
+            htmlContent += '<h3>Product Details</h3><hr>';
             htmlContent += '<p><strong>Name:</strong> ' + product.name + '</p>';
-            if (product.variants) {
-                htmlContent += '<p><strong>Sale Price:</strong> ' + product.variants.sale_price + '</p>';
-            } else {
-                htmlContent += '<p><strong>Sale Price:</strong> ' + product.sale_price + '</p>';
-            }
+            htmlContent += '<p><strong>Order Number:</strong> ' + orderItem.order_number + '</p>';
+            htmlContent += '<p><strong>Sale Price:</strong> ' + orderItem.sale_price + '</p>';
+            htmlContent += '<p><strong>Quantity:</strong> ' + orderItem.quantity + '</p>';
             htmlContent += '<p><strong>Description:</strong> ' + product.description + '</p>';
 
             // Variation details (if available)
-            if (product.variants) {
-                htmlContent += '<h3>Variation</h3>';
-                htmlContent += '<p><strong>Variation Name:</strong> ' + product.variants.name + '</p>';
-                htmlContent += '<p><strong>Variation Price:</strong> ' + product.variants.sale_price + '</p>';
+            if (variation) {
+                htmlContent += '<h3>Variation</h3><hr>';
+                htmlContent += '<p><strong>Variation Name:</strong> ' + variation.name + '</p>';
+                htmlContent += '<p><strong>Variation Price:</strong> ' + variation.sale_price + '</p>';
                 // Add more variation details as needed
             }
 
             // Images (if available)
             if (product.images && product.images.length > 0) {
-                htmlContent += '<h3>Images</h3>';
+                htmlContent += '<h3>Images</h3><hr>';
                 htmlContent += '<div class="row">';
                 product.images.forEach(function (image) {
-                    htmlContent += '<div class="col-md-3"><img src="' + image.image_path + '" alt="Product Image" class="img-fluid"></div>';
+                    htmlContent += '<div class="col-md-3"><img src="' + baseUrl + '/' + image.image_path + '" alt="Product Image" class="img-fluid"></div>';
                 });
                 htmlContent += '</div>';
             }

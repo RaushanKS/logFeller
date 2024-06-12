@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Orders;
 use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Products;
@@ -23,9 +24,14 @@ class DashboardController extends Controller
         $inactivated = Products::where('status', 0)->count();
         $twoDaysAgo = Carbon::now()->subDays(30);
 
+        $totalOrders = Orders::count();
+        $completedOrders = Orders::where('status', 2)->count();
+        $cancelledOrders = Orders::where('status', 3)->count();
+        $inprocessOrders = Orders::where('status', 1)->count();
+
         $recentProducts = Products::where('created_at', '>=', $twoDaysAgo)->count();
 
-        return view('dashboard', compact(['loggedInUser', 'totalRecords', 'activated', 'inactivated', 'recentProducts']));
+        return view('dashboard', compact(['loggedInUser', 'totalRecords', 'activated', 'inactivated', 'recentProducts', 'totalOrders', 'completedOrders', 'cancelledOrders', 'inprocessOrders']));
     }
 
     public function logout(Request $request)
