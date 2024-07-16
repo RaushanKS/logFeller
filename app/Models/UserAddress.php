@@ -24,6 +24,7 @@ class UserAddress extends Model
         'mobile',
         'phone_code',
         'phone_country',
+        'house_id',
         'street',
         'landmark',
         'state',

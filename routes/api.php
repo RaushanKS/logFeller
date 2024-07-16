@@ -65,6 +65,7 @@ Route::group(['prefix' => 'v1', 'namespace' => 'Api', 'middleware' => 'api'], fu
     Route::post('/fetch-coupons', [CheckoutController::class, 'fetchCoupons']);
 
     //Order
+    Route::post('/shipping-charge', [CheckoutController::class, 'shippingCharge']);
     Route::post('/order-create', [CheckoutController::class, 'orderCreate']);
     Route::post('/payment-success', [CheckoutController::class, 'paymentSuccess']);
     Route::post('/order-update', [CheckoutController::class, 'orderUpdate']);
@@ -72,6 +73,9 @@ Route::group(['prefix' => 'v1', 'namespace' => 'Api', 'middleware' => 'api'], fu
     Route::post('/order-items-fetch', [CheckoutController::class, 'orderItemsList']);
     Route::post('/order-cancel', [CheckoutController::class, 'orderCancel']);
     Route::post('/order-payment-details',  [CheckoutController::class, 'fetchPaymentDetails']);
+
+    // Stripe for apple
+    Route::post('/stripe-for-apple', [CheckoutController::class, 'stripeForApple']);
 
     // Without Auth routes
 

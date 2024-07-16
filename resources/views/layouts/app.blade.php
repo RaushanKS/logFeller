@@ -1968,7 +1968,7 @@
                                         <div class="dropdown-divider"></div>
                                     </li>
                                     <li>
-                                        <a class="dropdown-item" href="{{ url('/profile') }}">
+                                        <a class="dropdown-item" href=" ">
                                             <i class="ti ti-user-check me-2 ti-sm"></i>
                                             <span class="align-middle">My Profile</span>
                                         </a>

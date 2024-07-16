@@ -62,7 +62,7 @@ class RegisterController extends Controller
             define('TO_EMAIL_VERIFICATION', $email);
             define('TO_NAME_VERIFICATION', $name);
             define('TO_SUBJECT_VERIFICATION', $subject);
-            $data = array('name' => $name, 'email' => $email, 'link' => 'http://127.0.0.1:8000/email-confirmation/' . $tokenAdd);
+            $data = array('name' => $name, 'email' => $email, 'link' =>  env('APP_URL') . 'email-confirmation/' . $tokenAdd);
             Mail::send('email-verification', $data, function ($message) {
                 $message->to(TO_EMAIL_VERIFICATION, TO_NAME_VERIFICATION)->subject(TO_SUBJECT_VERIFICATION);
                 $message->from(env('MAIL_FROM_ADDRESS'), env('APP_NAME'));
@@ -91,7 +91,7 @@ class RegisterController extends Controller
                 define('TO_EMAIL_VERIFICATION', $email);
                 define('TO_NAME_VERIFICATION', $name);
                 define('TO_SUBJECT_VERIFICATION', $subject);
-                $data = array('name' => $name, 'email' => $email, 'link' => 'http://127.0.0.1:8000/email-confirmation/' . $tokenAdd);
+                $data = array('name' => $name, 'email' => $email, 'link' =>  env('APP_URL') . 'email-confirmation/' . $tokenAdd);
                 Mail::send('email-verification', $data, function ($message) {
                     $message->to(TO_EMAIL_VERIFICATION, TO_NAME_VERIFICATION)->subject(TO_SUBJECT_VERIFICATION);
                     $message->from(env('MAIL_FROM_ADDRESS'), env('APP_NAME'));
@@ -159,7 +159,7 @@ class RegisterController extends Controller
     private function sendResetEmail($email, $token)
     {
         $user = DB::table('users')->where('email', $email)->select('name', 'email')->first();
-        $link = 'http://127.0.0.1:8000/password/reset/' . $token . '?email=' . urlencode($user->email);
+        $link = env('APP_URL') . 'password/reset/' . $token . '?email=' . urlencode($user->email);
 
         try {
             $email = $user->email;

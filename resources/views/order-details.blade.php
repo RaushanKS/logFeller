@@ -147,6 +147,10 @@
                                     <h6 class="mb-0">£{{number_format($subTotalAmount, 2)}}</h6>
                                 </div>
                                 <div class="d-flex justify-content-between mb-2">
+                                    <span class="w-px-100 text-heading">Total:</span>
+                                    <h6 class="mb-0">£{{number_format($order->shipping_amount, 2)}}</h6>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
                                     <span class="w-px-100 text-heading">Discount:</span>
                                     <h6 class="mb-0">£{{($order->discount_amount) ? number_format($order->discount_amount, 2) : 0}}</h6>
                                 </div>

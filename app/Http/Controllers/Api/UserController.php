@@ -178,6 +178,7 @@ class UserController extends Controller
                 'mobile' => ['required', 'string'],
                 'phone_code' => ['required', 'string'],
                 'phone_country' => ['required', 'string'],
+                'house_id' => ['required', 'string'],
                 'street' => ['required', 'string'],
                 'state' => ['required', 'string'],
                 'city' => ['required', 'string'],
@@ -207,6 +208,7 @@ class UserController extends Controller
                 "mobile" => $request->mobile,
                 "phone_code" => $request->phone_code,
                 "phone_country" => $request->phone_country,
+                "house_id" => $request->house_id,
                 "street" => $request->street,
                 "landmark" => $request->landmark,
                 "state" => $request->state,
@@ -240,6 +242,7 @@ class UserController extends Controller
                 'mobile' => ['required', 'string'],
                 'phone_code' => ['required', 'string'],
                 'phone_country' => ['required', 'string'],
+                'house_id' => ['required', 'string'],
                 'street' => ['required', 'string'],
                 'state' => ['required', 'string'],
                 'city' => ['required', 'string'],
@@ -271,6 +274,7 @@ class UserController extends Controller
                 $address->mobile = $request->mobile;
                 $address->phone_code = $request->phone_code;
                 $address->phone_country = $request->phone_country;
+                $address->house_id = $request->house_id;
                 $address->street = $request->street;
                 $address->landmark = $request->landmark;
                 $address->state = $request->state;
@@ -311,6 +315,7 @@ class UserController extends Controller
                     "phone_code" => $address->phone_code,
                     "phone_country" => $address->phone_country,
                     "street" => $address->street,
+                    "house_name" => ($address->house_id) ? $address->house_id : null,
                     "landmark" => $address->landmark,
                     "state" => $address->state,
                     "city" => $address->city,
@@ -341,6 +346,7 @@ class UserController extends Controller
                         "phone_code" => $address->phone_code,
                         "phone_country" => $address->phone_country,
                         "street" => $address->street,
+                        "house_name" => ($address->house_id) ? $address->house_id : null,
                         "landmark" => $address->landmark,
                         "state" => $address->state,
                         "city" => $address->city,

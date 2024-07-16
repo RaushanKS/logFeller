@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('mobile')->nullable();
             $table->string('phone_code')->nullable();
             $table->string('phone_country')->nullable();
+            $table->string('house_id')->nullable();
             $table->string('street')->nullable();
             $table->string('landmark')->nullable();
             $table->string('state')->nullable();

@@ -1034,17 +1034,35 @@ if ($("#discountsTables").length > 0) {
                     );
                 },
             },
+
             {
-                aTargets: [7],
+                aTargets: [7], // Assuming this is your status column
                 mData: "id",
                 mRender: function (data, type, row, meta) {
-                    if (row.status == 1) {
-                        return '<span class="badge bg-success bg-glow">Acive</span>';
+                    var endDate = new Date(row.end_date);
+                    var currentDate = new Date();
+
+                    if (endDate < currentDate) {
+                        return '<span class="badge bg-danger bg-glow">Expired</span>';
+                    } else if (row.status == 1) {
+                        return '<span class="badge bg-success bg-glow">Active</span>';
                     } else {
-                        return '<span class="badge bg-danger bg-glow">In - Acive</span>';
+                        return '<span class="badge bg-warning bg-glow">In-Active</span>';
                     }
                 },
             },
+
+            // {
+            //     aTargets: [7],
+            //     mData: "id",
+            //     mRender: function (data, type, row, meta) {
+            //         if (row.status == 1) {
+            //             return '<span class="badge bg-success bg-glow">Acive</span>';
+            //         } else {
+            //             return '<span class="badge bg-danger bg-glow">In - Acive</span>';
+            //         } 
+            //     },
+            // },
         ],
         select: {
             style: "multi",
@@ -1999,7 +2017,7 @@ if ($("#ordersTables").length > 0) {
         ajax: baseUrl + "/orders/getOrders",
         pageLength: 10,
         language: {
-            searchPlaceholder: "Search By Name",
+            searchPlaceholder: "Search By Order Number",
         },
         columns: [
             {
@@ -2019,6 +2037,9 @@ if ($("#ordersTables").length > 0) {
             },
             {
                 data: "discount_amount",
+            },
+            {
+                data: "shipping_amount",
             },
             {
                 data: "payment_type",
@@ -2042,7 +2063,7 @@ if ($("#ordersTables").length > 0) {
                 },
             },
             {
-                aTargets: [9],
+                aTargets: [10],
                 mData: "id",
                 mRender: function (data, type, row, meta) {
                     let items = baseUrl + "/orders/items/view/" + row.id;
@@ -2059,22 +2080,24 @@ if ($("#ordersTables").length > 0) {
                 },
             },
             {
-                aTargets: [8],
+                aTargets: [9],
                 mData: "id",
                 mRender: function (data, type, row, meta) {
                     if (row.status == 1) {
-                        return '<span class="badge bg-success bg-glow">In-Process</span>';
+                        return '<span class="badge bg-info bg-glow">In-Process</span>';
                     } else if (row.status == 2) {
                         return '<span class="badge bg-success bg-glow">Completed</span>';
                     } else if (row.status == 3) {
-                        return '<span class="badge bg-success bg-glow">Cancelled</span>';
+                        return '<span class="badge bg-danger bg-glow">Cancelled</span>';
                     } else if (row.status == 4) {
-                        return '<span class="badge bg-success bg-glow">Refunded</span>';
+                        return '<span class="badge bg-warning bg-glow">Refunded</span>';
+                    } else {
+                        return '<span class="badge bg-secondary bg-glow">Under Review</span>'
                     }
                 },
             },
             {
-                aTargets: [10],
+                aTargets: [11],
                 mData: "id",
                 mRender: function (data, type, row, meta) {
                     let deleteUrl = baseUrl + "/orders/delete/" + row.id;
@@ -2178,18 +2201,17 @@ function viewOrderDetailModal(element) {
 
             // Product details
             htmlContent += '<h3>Product Details</h3><hr>';
-            htmlContent += '<p><strong>Name:</strong> ' + product.name + '</p>';
+            htmlContent += '<p><strong>Name:</strong> ' + product.name + ' - ' + variation.name + '</p>';
             htmlContent += '<p><strong>Order Number:</strong> ' + orderItem.order_number + '</p>';
-            htmlContent += '<p><strong>Sale Price:</strong> ' + orderItem.sale_price + '</p>';
+            htmlContent += '<p><strong>Sale Price:</strong> £' + (variation ? variation.sale_price : orderItem.sale_price) + '</p>';
             htmlContent += '<p><strong>Quantity:</strong> ' + orderItem.quantity + '</p>';
-            htmlContent += '<p><strong>Description:</strong> ' + product.description + '</p>';
+            htmlContent += '<p><strong>Description:</strong> ' + (product.description || 'No description available') + '</p>';
 
             // Variation details (if available)
             if (variation) {
                 htmlContent += '<h3>Variation</h3><hr>';
                 htmlContent += '<p><strong>Variation Name:</strong> ' + variation.name + '</p>';
-                htmlContent += '<p><strong>Variation Price:</strong> ' + variation.sale_price + '</p>';
-                // Add more variation details as needed
+                htmlContent += '<p><strong>Variation Price:</strong> £' + variation.sale_price + '</p>';
             }
 
             // Images (if available)
@@ -2210,3 +2232,54 @@ function viewOrderDetailModal(element) {
         }
     });
 }
+
+
+
+// function viewOrderDetailModal(element) {
+//     var urlRequest = element.getAttribute('data-url');
+
+//     $.ajax({
+//         type: "GET",
+//         url: urlRequest,
+//         success: function (data) {
+//             let order = data.order;
+//             let orderItem = data.orderItem;
+//             let product = data.product;
+//             let variation = data.variation;
+
+//             let htmlContent = '<h2>Order #' + order.order_id + '</h2><hr>';
+
+//             // Product details
+//             htmlContent += '<h3>Product Details</h3><hr>';
+//             htmlContent += '<p><strong>Name:</strong> ' + product.name + '</p>';
+//             htmlContent += '<p><strong>Order Number:</strong> ' + orderItem.order_number + '</p>';
+//             htmlContent += '<p><strong>Sale Price:</strong> ' + orderItem.sale_price + '</p>';
+//             htmlContent += '<p><strong>Quantity:</strong> ' + orderItem.quantity + '</p>';
+//             htmlContent += '<p><strong>Description:</strong> ' + product.description + '</p>';
+
+//             // Variation details (if available)
+//             if (variation) {
+//                 htmlContent += '<h3>Variation</h3><hr>';
+//                 htmlContent += '<p><strong>Variation Name:</strong> ' + variation.name + '</p>';
+//                 htmlContent += '<p><strong>Variation Price:</strong> ' + variation.sale_price + '</p>';
+//                 // Add more variation details as needed
+//             }
+
+//             // Images (if available)
+//             if (product.images && product.images.length > 0) {
+//                 htmlContent += '<h3>Images</h3><hr>';
+//                 htmlContent += '<div class="row">';
+//                 product.images.forEach(function (image) {
+//                     htmlContent += '<div class="col-md-3"><img src="' + baseUrl + '/' + image.image_path + '" alt="Product Image" class="img-fluid"></div>';
+//                 });
+//                 htmlContent += '</div>';
+//             }
+
+//             $('#viewOrderDetailModal .modal-body').html(htmlContent);
+//             $('#viewOrderDetailModal').modal('show');
+//         },
+//         error: function (error) {
+//             console.error("Error fetching order details:", error);
+//         }
+//     });
+// }

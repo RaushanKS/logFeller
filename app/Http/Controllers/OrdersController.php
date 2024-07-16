@@ -95,6 +95,7 @@ class OrdersController extends Controller
             $total_amount = $record->total_amount;
             $pay_amount = $record->pay_amount;
             $discount_amount = $record->discount_amount;
+            $shipping_amount = $record->shipping_amount;
             $transaction_id = $record->transaction_id;
             $payment_type = $record->payment_type;
             $payment_status = $record->payment_status;
@@ -109,6 +110,7 @@ class OrdersController extends Controller
                 "total_amount" => $total_amount,
                 "pay_amount" => $pay_amount,
                 "discount_amount" => $discount_amount,
+                "shipping_amount" => $shipping_amount,
                 "transaction_id" => $transaction_id,
                 "payment_type" => $payment_type,
                 "payment_status" => $payment_status,

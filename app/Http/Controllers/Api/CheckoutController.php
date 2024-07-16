@@ -19,7 +19,7 @@ use Illuminate\Support\Arr;
 use App\Models\OrderCoupons;
 use App\Models\ProductImage;
 use Illuminate\Http\Request;
-use Stripe\Checkout\Session;
+use Stripe\Checkout\Session as StripeSession;
 use App\Models\ProductVariant;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Http\Controllers\Controller;
@@ -34,7 +34,7 @@ class CheckoutController extends Controller
 
     public function __construct()
     {
-        $this->middleware('auth:api', ['except' => ['addToCart', 'updateCart', 'removeFromCart', 'fetchCarts', 'orderCreate', 'paymentSuccess', 'orderUpdate', 'couponApply', 'couponRemove', 'orderList', 'orderItemsList', 'orderCancel', 'fetchPaymentDetails', 'fetchCoupons']]);
+        $this->middleware('auth:api', ['except' => ['addToCart', 'updateCart', 'removeFromCart', 'fetchCarts', 'orderCreate', 'paymentSuccess', 'orderUpdate', 'couponApply', 'shippingCharge', 'couponRemove', 'orderList', 'orderItemsList', 'orderCancel', 'fetchPaymentDetails', 'fetchCoupons', 'stripeForApple', 'fetchPaymentDetails']]);
         $this->middleware(function ($request, $next) {
             $checkToken = $this->invoke();
             if ($checkToken) {
@@ -320,6 +320,7 @@ class CheckoutController extends Controller
 
             if ($cartItem) {
                 $cartItemRemove = Cart::where('id', $cartId)->where('productId', $productId)->where('user_id', $userId)->delete();
+                $res = CouponApply::where('user_id', $userId)->forceDelete();
 
                 if ($cartItemRemove) {
                     return response()->json(['status' => 'success', 'message' => 'Product removed from cart', 'data' => $cartItem], 200);
@@ -492,9 +493,8 @@ class CheckoutController extends Controller
                     $salePrice = 0;
                     $discountAmount = 0;
                     foreach ($cartsProducts as $key => $cartPro) {
-                        $salePrice = $salePrice + $cartPro->total;
+                        $salePrice = $salePrice + ($cartPro->price * $cartPro->quantity);
                     }
-
                     if ($discountType == 'percentage') {
                         if (!empty($min_order_amount)) {
                             if ($min_order_amount <= $salePrice) {
@@ -575,6 +575,80 @@ class CheckoutController extends Controller
         }
     }
 
+    public function shippingCharge(Request $request)
+    {
+        try {
+            $inputs = $request->all();
+            $rules = [
+                'addressId' => 'required',
+                'item' => 'required',
+            ];
+            // echo ($inputs['payAmount']); exit; 
+            $customMessages = [
+                'required' => 'Some information missing. Please try again!',
+            ];
+            $validator = Validator::make($request->all(), $rules, $customMessages);
+            if ($validator->fails()) {
+                // Session::flash('error', __($validator->errors()->first()));
+                return redirect()->back()->with('error', $validator->errors()->first());
+            }
+            // echo '<pre>';
+            // print_r($inputs['item']); exit;
+            $deliveryChargePerBag = 10; // in GBP
+            $totalDeliveryCharge = 0;
+
+            foreach ($inputs['item'] as $item) {
+                $productId = $item['productId'];
+                $quantity = $item['quantity'];
+
+                // Check if the product is important
+                $product = Products::where('id', $productId)->first();
+                if ($product && $product->is_important == 1) {
+                    $totalDeliveryCharge += $quantity * $deliveryChargePerBag;
+                }
+            }
+
+            // echo $totalDeliveryCharge; exit;
+
+            $address = UserAddress::where('id', $inputs['addressId'])->first();
+
+            // Calculate the distance from Cardiff
+            $distance = calculateDistanceFromCardiff($address->code);
+            // echo '<pre>';
+            // print_r($distance); exit;
+            $deliveryCharge = 0;
+
+            // Check if the postcode starts with "CF"
+            $isPostcodeCF = strpos($address->code, 'CF') === 0;
+
+            if ($distance > 18) {
+                // If the distance is greater than 20 miles, apply delivery charge
+                // $deliveryCharge = 10 * 100; // in pence
+                $deliveryCharge = $totalDeliveryCharge * 100; // in pence
+            } elseif ($distance <= 18 && $isPostcodeCF) {
+                // If the distance is within 20 miles but postcode starts with "CF", apply delivery charge
+                // $deliveryCharge = 10 * 100; 
+                $deliveryCharge = $totalDeliveryCharge * 100;
+            } elseif ($distance <= 18) {
+                // If the distance is within 20 miles and postcode does not start with "CF", no delivery charge
+                $deliveryCharge = 0;
+            }
+
+            // echo $deliveryCharge;
+            // exit;
+
+            return response()->json([
+                'status' => 'success',
+                'deliveryChargeInPence' => $deliveryCharge,
+                'deliveryChargeInPound' => $deliveryCharge / 100,
+                'distance' => $distance,
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json(['status' => 'failed', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+
     public function orderCreate(Request $request)
     {
         try {
@@ -596,6 +670,32 @@ class CheckoutController extends Controller
                 return redirect()->back()->with('error', $validator->errors()->first());
             }
 
+            // $importantProduct = Products::where('is_important', 1)->where('status', 1)->get();
+            // foreach($importantProduct as $impProd) {
+            //     foreach ($inputs['item'] as $productData) {
+            //         if(!in_array($impProd->id, $productData['productId'])) {
+            //             return response()->json(['status' => 'failed', 'message' => 'You cannot proceed without ' . $impProd->name . '. Please add thids product to cart to proceed.'], 422);
+            //         }
+            //     }
+            // }
+
+            // print_r($inputs['item']); exit;
+            $importantProduct = Products::where('is_important', 1)->where('status', 1)->get();
+            $importantProductIds = $importantProduct->pluck('id')->toArray();
+
+            // Collect all product IDs from the input data
+            $inputProductIds = array_column($inputs['item'], 'productId');
+
+            foreach ($importantProductIds as $importantId) {
+                if (!in_array($importantId, $inputProductIds)) {
+                    $missingProduct = $importantProduct->firstWhere('id', $importantId);
+                    return response()->json([
+                        'status' => 'failed',
+                        'message' => 'You cannot proceed without ' . $missingProduct->name . '. Please add this product to cart to proceed.'
+                    ], 422);
+                }
+            }
+
             $address = UserAddress::where('id', $inputs['addressId'])->first();
             $applyCoupon = CouponApply::where('id', $inputs['couponId'])->first();
 
@@ -607,19 +707,14 @@ class CheckoutController extends Controller
             if ($inputs['payment_method'] == 'stripe') {
                 $stripe = new \Stripe\StripeClient('sk_test_51P3tGMIVnUY0WCEQxHNL3YHoZrqknskGyhCxvoNYgp3WXlwqMdpwZlY4XrdXDydWEokpgNMGNDwPysZ4lSCQ9l2o00JU1IB5hx');
 
-                $address = UserAddress::where('id', $inputs['addressId'])->first();
-
-                // Calculate the distance from Cardiff
-                $distance = calculateDistanceFromCardiff($address->code);
-                $deliveryCharge = 0;
-
-                if ($distance > 20) {
-                    // If the distance is greater than 20 miles, do not proceed with the order
-                    return response()->json(['status' => 'failed', 'message' => 'Delivery address is too far from the shipment office.'], 422);
-                } elseif ($distance > 0 && $distance <= 20) {
-                    // If the distance is within 20 miles, apply a delivery charge of £10 per bag
-                    $deliveryCharge = 10 * 100; // in pence
-                }
+                $deliveryCharge = $inputs['shippingAmount'];
+                // if ($distance > 20) {
+                //     // If the distance is greater than 20 miles, do not proceed with the order
+                //     return response()->json(['status' => 'failed', 'message' => 'Delivery address is too far from the shipment office.'], 422);
+                // } elseif ($distance > 0 && $distance <= 20) {
+                //     // If the distance is within 20 miles, apply a delivery charge of £10 per bag
+                //     $deliveryCharge = 10 * 100; // in pence
+                // }
 
                 $customer = $stripe->customers->create([
                     'name' => $userName,
@@ -639,10 +734,10 @@ class CheckoutController extends Controller
                 ]);
 
                 // Convert payAmount from pounds to pence
-                $payAmountInPence = intval($inputs['payAmount'] * 100);
+                $payAmountInPence = intval(($inputs['payAmount'] + $deliveryCharge) * 100);
 
                 // Add delivery charge to payAmount
-                $payAmountInPence += $deliveryCharge;
+                // $payAmountInPence += $deliveryCharge;
 
                 $paymentIntent = $stripe->paymentIntents->create([
                     'amount' => $payAmountInPence, // amount in pence
@@ -740,9 +835,11 @@ class CheckoutController extends Controller
             }
 
             $address = UserAddress::where('id', $inputs['addressId'])->first();
-            $applyCoupon = CouponApply::where('coupon_id', $inputs['couponId'])->first();
-            print_r($applyCoupon);
-            exit;
+
+            $applyCoupon = null;
+            if (!empty($inputs['couponId'])) {
+                $applyCoupon = CouponApply::where('coupon_id', $inputs['couponId'])->first();
+            }
 
             $userId = $this->user_id;
             $userName = User::where('id', $userId)->pluck('name');
@@ -763,40 +860,43 @@ class CheckoutController extends Controller
             // return response()->json(['status' => 'success', 'message' => 'Order placed successfully', 'data' => $paymentDetails], 200);
 
             if ($paymentIntent->status == 'succeeded') {
-
                 $order = Orders::create([
                     'user_id' => $userId,
-                    'couponId' => $inputs['couponId'],
+                    'couponId' => isset($inputs['couponId']) ? $inputs['couponId'] : null,
                     'order_id' => $rest,
                     'address_id' => $inputs['addressId'],
                     'total_amount' => $inputs['totalAmount'],
                     'pay_amount' => $inputs['payAmount'],
-                    'discount_amount' => $inputs['discountAmount'],
+                    'shipping_amount' => $inputs['shippingAmount'],
+                    'discount_amount' => isset($inputs['discountAmount']) ? $inputs['discountAmount'] : 0.00,
                     'transaction_id' => $paymentIntent->id,
-                    'payment_type' => $inputs['payment_method'],
                     'payment_status' => $paymentIntent->status,
-                    'status' => ($paymentIntent->status == 'succeeded') ? 1 : 2,   //1 = 
-                    // 'status' => 1,   //1 = Order Confirmed, 2 = Order Cancelled
+                    'status' => ($paymentIntent->status == 'succeeded') ? 1 : 2,
                 ]);
 
                 if ($order) {
                     $orderId = $order['id'];
                     if (!empty($applyCoupon)) {
                         $discount = Discount::where('id', $applyCoupon->coupon_id)->first();
-                        $orderCoupon = OrderCoupons::create([
-                            "user_id" => $userId,
-                            "order_id" => $orderId,
-                            "couponId" => $discount->id,
-                            "name" => $discount->name,
-                            "discount_type" => $discount->discount_type,
-                            "max_discount" => $discount->max_discount,
-                            "min_order_amount" => $discount->min_order_amount,
-                            "discount_amount" => $discount->discount_amount,
-                            "discount_percent" => $discount->discount_percent,
-                            "description" => $discount->description,
-                            "start_date" => $discount->start_date,
-                            "end_date" => $discount->end_date,
-                        ]);
+                        if (!empty($discount)) {
+                            $orderCoupon = OrderCoupons::create([
+                                "user_id" => $userId,
+                                "order_id" => $orderId,
+                                "couponId" => ($discount) ? $discount->id : null,
+                                "name" => ($discount) ? $discount->name : null,
+                                "discount_type" => ($discount) ? $discount->discount_type : null,
+                                "max_discount" => ($discount) ? $discount->max_discount : null,
+                                "min_order_amount" => ($discount) ? $discount->min_order_amount : null,
+                                "discount_amount" => ($discount) ? $discount->discount_amount : null,
+                                "discount_percent" => ($discount) ? $discount->discount_percent : null,
+                                "description" => ($discount) ? $discount->description : null,
+                                "start_date" => ($discount) ? $discount->start_date : null,
+                                "end_date" => ($discount) ? $discount->end_date : null,
+                            ]);
+                        }
+
+                        // delete coupon
+                        $res = CouponApply::where('user_id', $userId)->where('coupon_id', $discount->id)->forceDelete();
                     }
                     if (!empty($address)) {
                         $shippings = Shipping::create([
@@ -831,8 +931,7 @@ class CheckoutController extends Controller
                                 'status' => 1,
                             ]);
 
-                            // delete coupon
-                            $res = CouponApply::where('user_id', $userId)->where('coupon_id', $discount->id)->forceDelete();
+
                             // Remove item from cart after adding to order
                             $deleteFromCart = Cart::where('user_id', $userId)
                                 ->where('productId', $productId)
@@ -851,6 +950,266 @@ class CheckoutController extends Controller
             return response()->json(['status' => 'failed', 'message' => $e->getMessage()], 422);
         }
     }
+
+    public function stripeForApple(Request $request)
+    {
+        try {
+            $inputs = $request->all();
+            $rules = [
+                'addressId' => 'required',
+                'totalAmount' => 'required',
+                'payAmount' => 'required',
+                'payment_method' => 'required',
+                'item' => 'required',
+            ];
+            // echo ($inputs['payAmount']); exit;
+            $customMessages = [
+                'required' => 'Some information messing Please Try again!',
+            ];
+            $validator = Validator::make($request->all(), $rules, $customMessages);
+            if ($validator->fails()) {
+                // Session::flash('error', __($validator->errors()->first()));
+                return redirect()->back()->with('error', $validator->errors()->first());
+            }
+
+            $address = UserAddress::where('id', $inputs['addressId'])->first();
+
+            $applyCoupon = null;
+            if (!empty($inputs['couponId'])) {
+                $applyCoupon = CouponApply::where('coupon_id', $inputs['couponId'])->first();
+            }
+
+            $userId = $request->user_id;
+            $userName = User::where('id', $userId)->pluck('name')->first();
+            $threeNumberLast = rand(10000000000000, 99999999999999);
+            $rest = 'LF' . $userId . $threeNumberLast;
+
+            if ($inputs['payment_method'] == 'stripe') {
+                $order = Orders::create([
+                    'user_id' => $userId,
+                    'couponId' => $request->input('couponId', null),
+                    'order_id' => $rest,
+                    'address_id' => $request->input('addressId'),
+                    'total_amount' => $request->input('totalAmount'),
+                    'pay_amount' => $request->input('payAmount') + $request->input('shippingAmount'), // Including shipping amount
+                    'shipping_amount' => $request->input('shippingAmount'),
+                    'discount_amount' => $request->input('discountAmount', 0.00),
+                    'transaction_id' => '',
+                    'payment_status' => '',
+                    'status' => 1,
+                ]);
+
+                if ($order) {
+                    $orderId = $order->id;
+                    $applyCoupon = $request->input('applyCoupon');
+                    $address = $request->input('address');
+
+                    if (!empty($applyCoupon)) {
+                        $discount = Discount::where('id', $applyCoupon['coupon_id'])->first();
+                        if (!empty($discount)) {
+                            OrderCoupons::create([
+                                "user_id" => $userId,
+                                "order_id" => $orderId,
+                                "couponId" => $discount->id,
+                                "name" => $discount->name,
+                                "discount_type" => $discount->discount_type,
+                                "max_discount" => $discount->max_discount,
+                                "min_order_amount" => $discount->min_order_amount,
+                                "discount_amount" => $discount->discount_amount,
+                                "discount_percent" => $discount->discount_percent,
+                                "description" => $discount->description,
+                                "start_date" => $discount->start_date,
+                                "end_date" => $discount->end_date,
+                            ]);
+
+                            CouponApply::where('user_id', $userId)->where('coupon_id', $discount->id)->forceDelete();
+                        }
+                    }
+
+                    if (!empty($address)) {
+                        Shipping::create([
+                            "user_id" => $userId,
+                            "address_id" => $address['id'],
+                            "order_id" => $orderId,
+                            "name" => $address['name'],
+                            "mobile" => $address['mobile'],
+                            "phone_code" => $address['phone_code'],
+                            "phone_country" => $address['phone_country'],
+                            "street" => $address['street'],
+                            "landmark" => $address['landmark'],
+                            "state" => $address['state'],
+                            "city" => $address['city'],
+                            "code" => $address['code'],
+                            "address_type" => $address['address_type'],
+                        ]);
+                    }
+
+                    $lineItems = [];
+                    $totalAmount = 0;
+
+                    if (!empty($request->input('item'))) {
+                        foreach ($request->input('item') as $productData) {
+                            $orderNumber = rand(10000000000000, 99999999999999);
+                            $odNumber = 'LF' . $userId . $orderNumber;
+                            $productId = $productData['productId'];
+                            $product = Products::where('id', $productId)->first();
+
+                            OrderItems::create([
+                                'product_id' => $productData['productId'],
+                                'order_id' => $orderId,
+                                'order_number' => $odNumber,
+                                'variation_id' => $productData['variationId'] ?? null,
+                                'quantity' => $productData['quantity'],
+                                'sale_price' => $productData['sale_price'],
+                                'status' => 1,
+                            ]);
+
+                            $lineItems[] = [
+                                'price_data' => [
+                                    'currency' => 'usd',
+                                    'product_data' => [
+                                        'name' => $product->name,
+                                    ],
+                                    'unit_amount' => $productData['sale_price'] * 100,
+                                ],
+                                'quantity' => $productData['quantity'],
+                            ];
+
+                            $totalAmount += $productData['sale_price'] * $productData['quantity'];
+
+                            Cart::where('user_id', $userId)
+                                ->where('productId', $productId)
+                                ->delete();
+                        }
+                    }
+
+                    // Add shipping amount as a separate line item
+                    $lineItems[] = [
+                        'price_data' => [
+                            'currency' => 'usd',
+                            'product_data' => [
+                                'name' => 'Shipping',
+                            ],
+                            'unit_amount' => $request->input('shippingAmount') * 100,
+                        ],
+                        'quantity' => 1,
+                    ];
+
+                    Stripe::setApiKey(env('STRIPE_SECRET'));
+
+                    $session = StripeSession::create([
+                        'payment_method_types' => ['card'],
+                        'line_items' => $lineItems,
+                        'mode' => 'payment',
+                        'success_url' => 'https://logfeller-payment.cyberx-infosystem.us/success?orderId=' . $orderId,
+                        'cancel_url' => 'https://logfeller-payment.cyberx-infosystem.us/cancel?orderId=' . $orderId,
+                        'metadata' => [
+                            'order_id' => $orderId,
+                        ],
+                    ]);
+
+                    $transactionId = $session->id;
+                    $order->transaction_id = $transactionId;
+                    $order->payment_status = 'pending';
+                    $order->status = 1;
+                    $order->save();
+
+                    $orderData = ['order_id' => $order->order_id];
+                    return response()->json(['status' => 'success', 'url' => $session->url, 'orderId' => $orderId, 'data' => $orderData], 200);
+                } else {
+                    return response()->json(['status' => 'failed', 'message' => 'Something went wrong'], 422);
+                }
+            } else {
+                return response()->json(['status' => 'failed', 'message' => 'Select payment method first to proceed.'], 422);
+            }
+        } catch (Exception $e) {
+            return response()->json(['status' => 'failed', 'message' => $e->getMessage()], 422);
+        }
+    }
+
+    public function fetchPaymentDetails(Request $request)
+    {
+        try {
+            $inputs = $request->all();
+
+            $userId = $this->user_id;
+
+            $order = Orders::where('id', $inputs['orderId'])->first();
+
+            $session_id = $order->traction_id;
+            Stripe::setApiKey(env('STRIPE_SECRET'));
+            $session = \Stripe\Checkout\Session::retrieve($session_id);
+
+            $customer = null;
+            $paymentIntent = null;
+
+            if (isset($session->customer)) {
+                $customer = \Stripe\Customer::retrieve($session->customer);
+            }
+
+            if (isset($session->payment_intent)) {
+                $paymentIntent = \Stripe\PaymentIntent::retrieve($session->payment_intent);
+
+                $orderId = $inputs['orderId'];
+                $orderCreate = Orders::find($orderId);
+                if ($orderCreate) {
+                    $orderCreate->traction_id = $paymentIntent->id;
+                    $order->payment_status = $paymentIntent->status;
+                    $orderCreate->save();
+
+                    $orderItems = OrderItems::where('order_id', $orderId)->get();
+
+                    foreach ($orderItems as $cartItem) {
+                        // Remove item from cart after adding to order
+                        $deleteFromCart = Cart::where('user_id', $userId)
+                            ->where('productId', $cartItem->product_id)
+                            ->delete();
+                    }
+                }
+            }
+
+            return response()->json([
+                'status' => 'success',
+                // 'session' => $session,
+                // 'customer' => $customer,
+                'paymentIntent' => $paymentIntent,
+            ], 200);
+        } catch (ApiErrorException $e) {
+            return response()->json(['status' => 'failed', 'message' => $e->getMessage()], 500);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 'failed', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    // public function handleStripeWebhook(Request $request)
+    // {
+    //     $payload = $request->getContent();
+    //     $sig_header = $request->server('HTTP_STRIPE_SIGNATURE');
+    //     $endpoint_secret = env('STRIPE_WEBHOOK_SECRET');
+
+    //     try {
+    //         $event = \Stripe\Webhook::constructEvent($payload, $sig_header, $endpoint_secret);
+
+    //         if ($event->type == 'checkout.session.completed') {
+    //             $session = $event->data->object;
+
+    //             $orderId = $session->metadata->order_id;
+    //             $order = Orders::find($orderId);
+
+    //             if ($order) {
+    //                 $order->payment_status = 'success';
+    //                 $order->status = 'completed';
+    //                 $order->save();
+    //             }
+    //         }
+    //     } catch (\UnexpectedValueException $e) {
+    //         return response()->json(['status' => 'error', 'message' => 'Invalid payload'], 400);
+    //     } catch (\Stripe\Exception\SignatureVerificationException $e) {
+    //         return response()->json(['status' => 'error', 'message' => 'Invalid signature'], 400);
+    //     }
+
+    //     return response()->json(['status' => 'success'], 200);
+    // }
 
     // public function fetchPaymentDetails(Request $request)
     // {
@@ -962,11 +1321,15 @@ class CheckoutController extends Controller
             $userId = $this->user_id;
             $currencySymbol = '£';
             $percentSymbol = '%';
-            $orderArr = array();
-            $orders = OrderItems::join('products', 'products.id', '=', 'order_items.product_id')->join('orders', 'orders.id', '=', 'order_items.order_id')->where('orders.user_id', $userId)->select(['order_items.*', 'products.id as productId', 'products.name', 'products.slug', 'products.description', 'orders.user_id',])->orderBy('order_items.id', 'desc')->get();
-            // echo '<pre>';
-            // print_r($orders);
-            // exit;
+            $orderArr = [];
+            $paymentDetailsArr = [];
+
+            $orders = OrderItems::join('products', 'products.id', '=', 'order_items.product_id')
+                ->join('orders', 'orders.id', '=', 'order_items.order_id')
+                ->where('orders.user_id', $userId)
+                ->select(['order_items.*', 'products.id as productId', 'products.name', 'products.slug', 'products.description', 'orders.user_id', 'orders.order_id as oId'])
+                ->orderBy('order_items.id', 'desc')
+                ->get();
 
             if ($orders) {
                 foreach ($orders as $order) {
@@ -974,33 +1337,33 @@ class CheckoutController extends Controller
                     $totalAmount = $ordersData->pay_amount;
                     $totalPayAmount = $ordersData->total_amount;
                     $payPercent = ($totalPayAmount * 100) / $totalAmount;
-                    $payPercentRound = number_format((float) $payPercent, 2, '.', '');
+                    $payPercentRound = number_format((float)$payPercent, 2, '.', '');
                     $discountPercent = 100 - $payPercentRound;
-                    $saleAmount = ($discountPercent > 0) ? ($order->quantity * $order->sale_price * $discountPercent) / 100 : number_format((float) $order->quantity * $order->sale_price, 2, '.', '');
-                    // echo $order->user_id; exit;
-                    //echo'<pre>';print_r($saleAmount);exit;
+                    $saleAmount = ($discountPercent > 0) ? ($order->quantity * $order->sale_price * $discountPercent) / 100 : number_format((float)$order->quantity * $order->sale_price, 2, '.', '');
 
                     $salePrice = "{$currencySymbol}{$order->sale_price}";
                     $orderAmount = "{$currencySymbol}{$saleAmount}";
-
-
-                    $firstProductImage = ProductImage::where('product_id', $order->product_id)->first();
-                    if ($firstProductImage) {
-                        $prodImg = $firstProductImage->image_path;
-                    } else {
-                        $prodImg = null;
+                    $variantName = '';
+                    $productVariant = ProductVariant::where('product_id', $order->product_id)->where('id', $order->variation_id)->first();
+                    if (!empty($productVariant)) {
+                        $variantName = $productVariant->name;
                     }
+                    // echo $order->variation_id; exit;
+                    // echo $variantName = $productVariant->name; exit;
+                    $firstProductImage = ProductImage::where('product_id', $order->product_id)->first();
+                    $prodImg = $firstProductImage ? $firstProductImage->image_path : null;
 
                     $orderArr[] = array(
                         'id' => $order->id,
                         'user_id' => $order->user_id,
+                        'oId' => $order->oId,
                         'orderId' => $order->order_id,
                         'order_number' => $order->order_number,
                         'quantity' => $order->quantity,
                         'sale_price' => $salePrice,
                         'order_amount' => $orderAmount,
-                        'featured_image' => ($prodImg) ? url($prodImg) : null,
-                        // 'sku' => $order->sku,
+                        'variation_name' => ($variantName) ? $variantName : null,
+                        'featured_image' => $prodImg ? url($prodImg) : null,
                         'name' => $order->name,
                         'slug' => $order->slug,
                         'status' => $order->status,
@@ -1008,45 +1371,56 @@ class CheckoutController extends Controller
                         'createdAt' => Carbon::createFromFormat('Y-m-d H:i:s', $order->created_at)->format('Y-m-d'),
                         'updateAt' => Carbon::createFromFormat('Y-m-d H:i:s', $order->updated_at)->format('Y-m-d'),
                     );
-                }
 
-                $couponDetails = [];
-                if (!empty($ordersData->couponId)) {
-                    $discountCoupon = Discount::where('id', $ordersData->couponId)->first();
+                    // Collect payment details for each unique oId
+                    if (!isset($paymentDetailsArr[$order->oId])) {
+                        $couponDetails = [];
+                        if (!empty($ordersData->couponId)) {
+                            $discountCoupon = Discount::where('id', $ordersData->couponId)->first();
 
-                    if ($discountCoupon->discount_type == 'percentage') {
-                        $discount = "{$discountCoupon->discount_percent}{$percentSymbol}";
-                    } elseif ($discountCoupon->discount_type == 'fixed') {
-                        $discount = "{$currencySymbol}{$discountCoupon->discount_amount}";
+                            if ($discountCoupon->discount_type == 'percentage') {
+                                $discount = "{$discountCoupon->discount_percent}{$percentSymbol}";
+                            } elseif ($discountCoupon->discount_type == 'fixed') {
+                                $discount = "{$currencySymbol}{$discountCoupon->discount_amount}";
+                            }
+
+                            $maxDiscount = "{$currencySymbol}{$discountCoupon->max_discount}";
+                            $minOrderAmount = "{$currencySymbol}{$discountCoupon->min_order_amount}";
+
+                            $couponDetails[] = array(
+                                'couponName' => $discountCoupon->name,
+                                'discountType' => $discount,
+                                'max_discount' => $maxDiscount,
+                                'min_order_amount' => $minOrderAmount,
+                                'description' => $discountCoupon->description,
+                                'start_date' => $discountCoupon->start_date,
+                                'end_date' => $discountCoupon->end_date,
+                            );
+                        }
+
+                        $paymentDetailsArr[$order->oId] = array(
+                            'id' => $ordersData->id,
+                            'orderId' => $ordersData->order_id,
+                            'orderTotalAmount' => $ordersData->total_amount,
+                            'payAmount' => $ordersData->pay_amount,
+                            'discountAmount' => $ordersData->discount_amount,
+                            'transactionId' => $ordersData->transaction_id,
+                            'paymentType' => $ordersData->payment_type,
+                            'paymentStatus' => $ordersData->payment_status,
+                            'discountCoupon' => $couponDetails,
+                        );
                     }
-
-                    $maxDiscount = "{$currencySymbol}{$discountCoupon->max_discount}";
-                    $minOrderAmount = "{$currencySymbol}{$discountCoupon->min_order_amount}";
-
-                    $couponDetails[] = array(
-                        'couponName' => $discountCoupon->name,
-                        'discountType' => $discount,
-                        'max_discount' => $maxDiscount,
-                        'min_order_amount' => $minOrderAmount,
-                        'description' => $discountCoupon->description,
-                        'start_date' => $discountCoupon->start_date,
-                        'end_date' => $discountCoupon->end_date,
-                    );
                 }
-
-                $paymentArr[] = array(
-                    'id' => $ordersData->id,
-                    'orderId' => $ordersData->order_id,
-                    'orderTotalAmount' => $ordersData->total_amount,
-                    'payAmont' => $ordersData->pay_amount,
-                    'discountAmount' => $ordersData->discount_amount,
-                    'transactionId' => $ordersData->transaction_id,
-                    'paymentType' => $ordersData->payment_type,
-                    'paymentStatus' => $ordersData->payment_status,
-                    'discountCoupon' => $couponDetails,
-                );
             }
-            return response()->json(['status' => 'success', 'message' => '', 'data' => ['orders' => $orderArr, 'paymentDetails' => $paymentArr]], 200);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => '',
+                'data' => [
+                    'orders' => $orderArr,
+                    'paymentDetails' => array_values($paymentDetailsArr),
+                ]
+            ], 200);
         } catch (Exception $e) {
             return response()->json(['status' => 'failed', 'message' => $e->getMessage()], 500);
         }
@@ -1084,7 +1458,7 @@ class CheckoutController extends Controller
                             $variationData = array(
                                 'name' => ($variation) ? $variation->name : null,
                                 'sale_price' => ($variation) ? $variation->sale_price : null,
-                                'quantity' => ($variation) ? $variation->quantity : null,
+                                // 'quantity' => ($variation) ? $variation->quantity : null,
                             );
                         }
 
@@ -1140,6 +1514,7 @@ class CheckoutController extends Controller
                                 'mobile' => $userAddress->mobile,
                                 'phone_code' => $userAddress->phone_code,
                                 'phone_country' => $userAddress->phone_country,
+                                'house_name' => $userAddress->house_id,
                                 'street' => $userAddress->street,
                                 'landmark' => $userAddress->landmark,
                                 'state' => $userAddress->state,

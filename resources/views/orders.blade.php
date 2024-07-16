@@ -24,6 +24,7 @@
                 <th>Total Amount</th>
                 <th>Pay Amount</th>
                 <th>Discount Amount</th>
+                <th>Shipping Amount</th>
                 <th>Payment Method</th>
                 <th>Created At</th>
                 <th>Status</th>
