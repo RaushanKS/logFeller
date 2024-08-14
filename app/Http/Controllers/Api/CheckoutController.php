@@ -828,8 +828,7 @@ class CheckoutController extends Controller
             $threeNumberLast = rand(10000000000000, 99999999999999);
             $rest = 'LF' . $userId . $threeNumberLast;
 
-            // Stripe::setApiKey('sk_test_51P3tGMIVnUY0WCEQxHNL3YHoZrqknskGyhCxvoNYgp3WXlwqMdpwZlY4XrdXDydWEokpgNMGNDwPysZ4lSCQ9l2o00JU1IB5hx');    test key
-            Stripe::setApiKey('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');
+            Stripe::setApiKey('sk_test_51P3tGMIVnUY0WCEQxHNL3YHoZrqknskGyhCxvoNYgp3WXlwqMdpwZlY4XrdXDydWEokpgNMGNDwPysZ4lSCQ9l2o00JU1IB5hx');
             $paymentIntentId = $request->input('txn_id');
 
             // Retrieve the payment intent from Stripe
