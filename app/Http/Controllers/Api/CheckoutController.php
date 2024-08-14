@@ -685,8 +685,7 @@ class CheckoutController extends Controller
             $rest = 'LF' . $userId . $threeNumberLast;
 
             if ($inputs['payment_method'] == 'stripe') {
-                // $stripe = new \Stripe\StripeClient('sk_test_51P3tGMIVnUY0WCEQxHNL3YHoZrqknskGyhCxvoNYgp3WXlwqMdpwZlY4XrdXDydWEokpgNMGNDwPysZ4lSCQ9l2o00JU1IB5hx'); test key
-                $stripe = new \Stripe\StripeClient('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');
+                $stripe = new \Stripe\StripeClient('sk_test_51P3tGMIVnUY0WCEQxHNL3YHoZrqknskGyhCxvoNYgp3WXlwqMdpwZlY4XrdXDydWEokpgNMGNDwPysZ4lSCQ9l2o00JU1IB5hx'); 
 
                 $deliveryCharge = $inputs['shippingAmount'];
                 // if ($distance > 20) {
