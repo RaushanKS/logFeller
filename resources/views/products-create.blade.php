@@ -104,7 +104,7 @@
                             </div>
                         </div>
                         <div id="variants-section" style="display:none;">
-                            <h3>Variants</h3>
+                            <h3>Variants</h3> 
                             <div class="row variant">
                                 <div class="mb-3 col-lg-6 col-xl-6 col-12 mb-0">
                                     <label class="col-form-label" for="variant_name">Variant Name</label>

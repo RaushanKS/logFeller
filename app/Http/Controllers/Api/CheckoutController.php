@@ -583,17 +583,13 @@ class CheckoutController extends Controller
                 'addressId' => 'required',
                 'item' => 'required',
             ];
-            // echo ($inputs['payAmount']); exit; 
             $customMessages = [
                 'required' => 'Some information missing. Please try again!',
             ];
             $validator = Validator::make($request->all(), $rules, $customMessages);
             if ($validator->fails()) {
-                // Session::flash('error', __($validator->errors()->first()));
                 return redirect()->back()->with('error', $validator->errors()->first());
             }
-            // echo '<pre>';
-            // print_r($inputs['item']); exit;
             $deliveryChargePerBag = 10; // in GBP
             $totalDeliveryCharge = 0;
 
@@ -601,41 +597,25 @@ class CheckoutController extends Controller
                 $productId = $item['productId'];
                 $quantity = $item['quantity'];
 
-                // Check if the product is important
                 $product = Products::where('id', $productId)->first();
                 if ($product && $product->is_important == 1) {
                     $totalDeliveryCharge += $quantity * $deliveryChargePerBag;
                 }
             }
 
-            // echo $totalDeliveryCharge; exit;
-
             $address = UserAddress::where('id', $inputs['addressId'])->first();
 
-            // Calculate the distance from Cardiff
             $distance = calculateDistanceFromCardiff($address->code);
-            // echo '<pre>';
-            // print_r($distance); exit;
             $deliveryCharge = 0;
-
-            // Check if the postcode starts with "CF"
             $isPostcodeCF = strpos($address->code, 'CF') === 0;
 
             if ($distance > 18) {
-                // If the distance is greater than 20 miles, apply delivery charge
-                // $deliveryCharge = 10 * 100; // in pence
                 $deliveryCharge = $totalDeliveryCharge * 100; // in pence
             } elseif ($distance <= 18 && $isPostcodeCF) {
-                // If the distance is within 20 miles but postcode starts with "CF", apply delivery charge
-                // $deliveryCharge = 10 * 100; 
                 $deliveryCharge = $totalDeliveryCharge * 100;
             } elseif ($distance <= 18) {
-                // If the distance is within 20 miles and postcode does not start with "CF", no delivery charge
                 $deliveryCharge = 0;
             }
-
-            // echo $deliveryCharge;
-            // exit;
 
             return response()->json([
                 'status' => 'success',
@@ -705,7 +685,8 @@ class CheckoutController extends Controller
             $rest = 'LF' . $userId . $threeNumberLast;
 
             if ($inputs['payment_method'] == 'stripe') {
-                $stripe = new \Stripe\StripeClient('sk_test_51P3tGMIVnUY0WCEQxHNL3YHoZrqknskGyhCxvoNYgp3WXlwqMdpwZlY4XrdXDydWEokpgNMGNDwPysZ4lSCQ9l2o00JU1IB5hx');
+                // $stripe = new \Stripe\StripeClient('sk_test_51P3tGMIVnUY0WCEQxHNL3YHoZrqknskGyhCxvoNYgp3WXlwqMdpwZlY4XrdXDydWEokpgNMGNDwPysZ4lSCQ9l2o00JU1IB5hx'); test key
+                $stripe = new \Stripe\StripeClient('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');
 
                 $deliveryCharge = $inputs['shippingAmount'];
                 // if ($distance > 20) {
@@ -754,7 +735,8 @@ class CheckoutController extends Controller
                     'paymentIntent' => $paymentIntent->client_secret,
                     'ephemeralKey' => $ephemeralKey->secret,
                     'customer' => $customer->id,
-                    'publishableKey' => 'pk_test_51P3tGMIVnUY0WCEQUFadAdAUGWREQ5j7pZbzu70S6jWy8hQ9W7xCHwDPYf8TP9XHGLc9Yra0UNdisNroSq3pbXML00lkwC29gm'
+                    'publishableKey' => 'pk_live_51PiyFcAiBmzIhYUNkEv5BkDyHmibaVhCR26BTspiiHt8VZUokgaRurLmhQG6SJthUjs4eEzfV2i3oOCjMeL3va2200Tf9Jn3Jj'
+                    // 'publishableKey' => 'pk_test_51P3tGMIVnUY0WCEQUFadAdAUGWREQ5j7pZbzu70S6jWy8hQ9W7xCHwDPYf8TP9XHGLc9Yra0UNdisNroSq3pbXML00lkwC29gm' test key
                 ];
 
                 return response()->json(['status' => 'success', 'paymentDetails' => $paymentData, 'paymentIntent' => $paymentIntent], 200);
@@ -846,7 +828,8 @@ class CheckoutController extends Controller
             $threeNumberLast = rand(10000000000000, 99999999999999);
             $rest = 'LF' . $userId . $threeNumberLast;
 
-            Stripe::setApiKey('sk_test_51P3tGMIVnUY0WCEQxHNL3YHoZrqknskGyhCxvoNYgp3WXlwqMdpwZlY4XrdXDydWEokpgNMGNDwPysZ4lSCQ9l2o00JU1IB5hx');
+            // Stripe::setApiKey('sk_test_51P3tGMIVnUY0WCEQxHNL3YHoZrqknskGyhCxvoNYgp3WXlwqMdpwZlY4XrdXDydWEokpgNMGNDwPysZ4lSCQ9l2o00JU1IB5hx');    test key
+            Stripe::setApiKey('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');
             $paymentIntentId = $request->input('txn_id');
 
             // Retrieve the payment intent from Stripe
@@ -951,6 +934,189 @@ class CheckoutController extends Controller
         }
     }
 
+    // public function stripeForApple(Request $request)
+    // {
+    //     try {
+    //         $inputs = $request->all();
+    //         $rules = [
+    //             'addressId' => 'required',
+    //             'totalAmount' => 'required',
+    //             'payAmount' => 'required',
+    //             'payment_method' => 'required',
+    //             'item' => 'required',
+    //         ];
+    //         // echo ($inputs['payAmount']); exit;
+    //         $customMessages = [
+    //             'required' => 'Some information messing Please Try again!',
+    //         ];
+    //         $validator = Validator::make($request->all(), $rules, $customMessages);
+    //         if ($validator->fails()) {
+    //             // Session::flash('error', __($validator->errors()->first()));
+    //             return redirect()->back()->with('error', $validator->errors()->first());
+    //         }
+
+    //         $address = UserAddress::where('id', $inputs['addressId'])->first();
+
+    //         $applyCoupon = null;
+    //         if (!empty($inputs['couponId'])) {
+    //             $applyCoupon = CouponApply::where('coupon_id', $inputs['couponId'])->first();
+    //         }
+
+    //         $userId = $request->user_id;
+    //         $userName = User::where('id', $userId)->pluck('name')->first();
+    //         $threeNumberLast = rand(10000000000000, 99999999999999);
+    //         $rest = 'LF' . $userId . $threeNumberLast;
+
+    //         if ($inputs['payment_method'] == 'stripe') {
+    //             $order = Orders::create([
+    //                 'user_id' => $userId,
+    //                 'couponId' => $request->input('couponId', null),
+    //                 'order_id' => $rest,
+    //                 'address_id' => $request->input('addressId'),
+    //                 'total_amount' => $request->input('totalAmount'),
+    //                 'pay_amount' => $request->input('payAmount') + $request->input('shippingAmount'), // Including shipping amount
+    //                 'shipping_amount' => $request->input('shippingAmount'),
+    //                 'discount_amount' => $request->input('discountAmount', 0.00),
+    //                 'transaction_id' => '',
+    //                 'payment_status' => '',
+    //                 'status' => 1,
+    //             ]);
+
+    //             if ($order) {
+    //                 $orderId = $order->id;
+    //                 $applyCoupon = $request->input('applyCoupon');
+    //                 $address = $request->input('address');
+
+    //                 if (!empty($applyCoupon)) {
+    //                     $discount = Discount::where('id', $applyCoupon['coupon_id'])->first();
+    //                     if (!empty($discount)) {
+    //                         OrderCoupons::create([
+    //                             "user_id" => $userId,
+    //                             "order_id" => $orderId,
+    //                             "couponId" => $discount->id,
+    //                             "name" => $discount->name,
+    //                             "discount_type" => $discount->discount_type,
+    //                             "max_discount" => $discount->max_discount,
+    //                             "min_order_amount" => $discount->min_order_amount,
+    //                             "discount_amount" => $discount->discount_amount,
+    //                             "discount_percent" => $discount->discount_percent,
+    //                             "description" => $discount->description,
+    //                             "start_date" => $discount->start_date,
+    //                             "end_date" => $discount->end_date,
+    //                         ]);
+
+    //                         CouponApply::where('user_id', $userId)->where('coupon_id', $discount->id)->forceDelete();
+    //                     }
+    //                 }
+
+    //                 if (!empty($address)) {
+    //                     Shipping::create([
+    //                         "user_id" => $userId,
+    //                         "address_id" => $address['id'],
+    //                         "order_id" => $orderId,
+    //                         "name" => $address['name'],
+    //                         "mobile" => $address['mobile'],
+    //                         "phone_code" => $address['phone_code'],
+    //                         "phone_country" => $address['phone_country'],
+    //                         "street" => $address['street'],
+    //                         "landmark" => $address['landmark'],
+    //                         "state" => $address['state'],
+    //                         "city" => $address['city'],
+    //                         "code" => $address['code'],
+    //                         "address_type" => $address['address_type'],
+    //                     ]);
+    //                 }
+
+    //                 $lineItems = [];
+    //                 $totalAmount = 0;
+
+    //                 if (!empty($request->input('item'))) {
+    //                     foreach ($request->input('item') as $productData) {
+    //                         $orderNumber = rand(10000000000000, 99999999999999);
+    //                         $odNumber = 'LF' . $userId . $orderNumber;
+    //                         $productId = $productData['productId'];
+    //                         $product = Products::where('id', $productId)->first();
+
+    //                         OrderItems::create([
+    //                             'product_id' => $productData['productId'],
+    //                             'order_id' => $orderId,
+    //                             'order_number' => $odNumber,
+    //                             'variation_id' => $productData['variationId'] ?? null,
+    //                             'quantity' => $productData['quantity'],
+    //                             'sale_price' => $productData['sale_price'],
+    //                             'status' => 1,
+    //                         ]);
+
+    //                         $lineItems[] = [
+    //                             'price_data' => [
+    //                                 'currency' => 'usd',
+    //                                 'product_data' => [
+    //                                     'name' => $product->name,
+    //                                 ],
+    //                                 'unit_amount' => $productData['sale_price'] * 100,
+    //                             ],
+    //                             'quantity' => $productData['quantity'],
+    //                         ];
+
+    //                         $totalAmount += $productData['sale_price'] * $productData['quantity'];
+
+    //                         Cart::where('user_id', $userId)
+    //                             ->where('productId', $productId)
+    //                             ->delete();
+    //                     }
+    //                 }
+
+    //                 // Add shipping amount as a separate line item
+    //                 $lineItems[] = [
+    //                     'price_data' => [
+    //                         'currency' => 'usd',
+    //                         'product_data' => [
+    //                             'name' => 'Shipping',
+    //                         ],
+    //                         'unit_amount' => $request->input('shippingAmount') * 100,
+    //                     ],
+    //                     'quantity' => 1,
+    //                 ];
+
+    //                 Stripe::setApiKey(env('STRIPE_SECRET'));
+
+    //                 $session = StripeSession::create([
+    //                     'payment_method_types' => ['card'],
+    //                     'line_items' => $lineItems,
+    //                     'mode' => 'payment',
+    //                     'success_url' => 'https://logfeller-payment.cyberx-infosystem.us/success/orderId=' . $orderId,
+    //                     'cancel_url' => 'https://logfeller-payment.cyberx-infosystem.us/cancel/orderId=' . $orderId,
+    //                     'metadata' => [
+    //                         'order_id' => $orderId,
+    //                     ],
+    //                 ]);
+
+    //                 $transactionId = $session->id;
+    //                 $order->transaction_id = $transactionId;
+    //                 $order->payment_status = 'pending';
+    //                 $order->status = 1;
+    //                 $order->save();
+
+    //                 $orderData = ['order_id' => $order->order_id];
+    //                 return response()->json(['status' => 'success', 'url' => $session->url, 'orderId' => $orderId, 'data' => $orderData], 200);
+    //             } else {
+    //                 return response()->json(['status' => 'failed', 'message' => 'Something went wrong'], 422);
+    //             }
+    //         } else {
+    //             return response()->json(['status' => 'failed', 'message' => 'Select payment method first to proceed.'], 422);
+    //         }
+    //     } catch (Exception $e) {
+    //         return response()->json(['status' => 'failed', 'message' => $e->getMessage()], 422);
+    //     }
+    // }
+
+
+
+
+
+
+
+
     public function stripeForApple(Request $request)
     {
         try {
@@ -962,13 +1128,11 @@ class CheckoutController extends Controller
                 'payment_method' => 'required',
                 'item' => 'required',
             ];
-            // echo ($inputs['payAmount']); exit;
             $customMessages = [
-                'required' => 'Some information messing Please Try again!',
+                'required' => 'Some information missing. Please try again!',
             ];
             $validator = Validator::make($request->all(), $rules, $customMessages);
             if ($validator->fails()) {
-                // Session::flash('error', __($validator->errors()->first()));
                 return redirect()->back()->with('error', $validator->errors()->first());
             }
 
@@ -979,7 +1143,7 @@ class CheckoutController extends Controller
                 $applyCoupon = CouponApply::where('coupon_id', $inputs['couponId'])->first();
             }
 
-            $userId = $request->user_id;
+            $userId = $this->user_id;
             $userName = User::where('id', $userId)->pluck('name')->first();
             $threeNumberLast = rand(10000000000000, 99999999999999);
             $rest = 'LF' . $userId . $threeNumberLast;
@@ -1048,45 +1212,129 @@ class CheckoutController extends Controller
                     $totalAmount = 0;
 
                     if (!empty($request->input('item'))) {
-                        foreach ($request->input('item') as $productData) {
-                            $orderNumber = rand(10000000000000, 99999999999999);
-                            $odNumber = 'LF' . $userId . $orderNumber;
-                            $productId = $productData['productId'];
-                            $product = Products::where('id', $productId)->first();
-
-                            OrderItems::create([
-                                'product_id' => $productData['productId'],
-                                'order_id' => $orderId,
-                                'order_number' => $odNumber,
-                                'variation_id' => $productData['variationId'] ?? null,
-                                'quantity' => $productData['quantity'],
-                                'sale_price' => $productData['sale_price'],
-                                'status' => 1,
-                            ]);
-
-                            $lineItems[] = [
-                                'price_data' => [
-                                    'currency' => 'usd',
-                                    'product_data' => [
-                                        'name' => $product->name,
-                                    ],
-                                    'unit_amount' => $productData['sale_price'] * 100,
-                                ],
-                                'quantity' => $productData['quantity'],
-                            ];
-
-                            $totalAmount += $productData['sale_price'] * $productData['quantity'];
-
-                            Cart::where('user_id', $userId)
-                                ->where('productId', $productId)
-                                ->delete();
+                        $currentDate = date('Y-m-d');
+                        if(!empty($inputs['couponId'])) {
+                            $discount = Discount::where('id', $inputs['couponId'])
+                            ->where('end_date', '>=', $currentDate)
+                            ->where('status', 1)
+                            ->first();
                         }
+
+                        // Add debug information
+                        if (empty($discount)) {
+                            // return response()->json(['status' => 'failed', 'message' => 'Invalid coupon or coupon has expired.'], 422);
+                            if (!empty($request->input('item'))) {
+                                foreach ($request->input('item') as $productData) {
+                                    $orderNumber = rand(10000000000000, 99999999999999);
+                                    $odNumber = 'LF' . $userId . $orderNumber;
+                                    $productId = $productData['productId'];
+                                    $product = Products::where('id', $productId)->first();
+
+                                    OrderItems::create([
+                                        'product_id' => $productData['productId'],
+                                        'order_id' => $orderId,
+                                        'order_number' => $odNumber,
+                                        'variation_id' => $productData['variationId'] ?? null,
+                                        'quantity' => $productData['quantity'],
+                                        'sale_price' => $productData['sale_price'],
+                                        'status' => 1,
+                                    ]);
+
+                                    $lineItems[] = [
+                                        'price_data' => [
+                                            'currency' => 'gbp',
+                                            'product_data' => [
+                                                'name' => $product->name,
+                                            ],
+                                            'unit_amount' => $productData['sale_price'] * 100,
+                                        ],
+                                        'quantity' => $productData['quantity'],
+                                    ];
+
+                                    $totalAmount += $productData['sale_price'] * $productData['quantity'];
+
+                                    Cart::where('user_id', $userId)
+                                        ->where('productId', $productId)
+                                        ->delete();
+                                }
+                            }
+                        } else {
+                            $discountType = $discount->discount_type;
+                            $max_discount = $discount->max_discount;
+                            $min_order_amount = $discount->min_order_amount;
+                            $discount_amount = $discount->discount_amount;
+                            $discount_percent = $discount->discount_percent;
+                            $totalDiscountAmount = 0;
+
+                            foreach ($request->input('item') as $productData) {
+                                $orderNumber = rand(10000000000000, 99999999999999);
+                                $odNumber = 'LF' . $userId . $orderNumber;
+                                $productId = $productData['productId'];
+                                $product = Products::where('id', $productId)->first();
+
+                                $salePrice = $productData['sale_price'];
+                                
+                                $discountAmount = 0;
+
+                                // Calculate discount based on discount type
+                                if ($discountType == 'percentage') {
+                                    $discountAmount = ($salePrice * $discount_percent) / 100;
+                                    if ($discountAmount > $max_discount && !empty($max_discount)) {
+                                        $discountAmount = $max_discount;
+                                    }
+                                    // echo $discountAmount;
+                                    // exit;
+                                } else {
+                                    $discountAmount = $discount_amount;
+                                    if ($discountAmount > $max_discount && !empty($max_discount)) {
+                                        $discountAmount = $max_discount;
+                                    }
+                                }
+
+                                $totalDiscountAmount += $discountAmount;
+                                // echo $totalDiscountAmount;
+                                // exit;
+                                $adjustedPrice = $salePrice - $discountAmount;
+                                // echo $adjustedPrice; exit;
+                                OrderItems::create([
+                                    'product_id' => $productData['productId'],
+                                    'order_id' => $orderId,
+                                    'order_number' => $odNumber,
+                                    'variation_id' => $productData['variationId'] ?? null,
+                                    'quantity' => $productData['quantity'],
+                                    'sale_price' => $salePrice,
+                                    'discounted_price' => $adjustedPrice,
+                                    'status' => 1,
+                                ]);
+
+                                $lineItems[] = [
+                                    'price_data' => [
+                                        'currency' => 'gbp',
+                                        'product_data' => [
+                                            'name' => $product->name,
+                                            // 'sale_price' => $productData['sale_price'],
+                                            // 'discount' => $totalDiscountAmount,
+                                        ],
+                                        'unit_amount' => $adjustedPrice * 100,
+                                    ],
+                                    'quantity' => $productData['quantity'],
+                                ];
+
+                                $totalAmount += ($adjustedPrice * $productData['quantity']);
+
+                                Cart::where('user_id', $userId)
+                                    ->where('productId', $productId)
+                                    ->delete();
+                            }
+                        }
+
+                        
                     }
 
                     // Add shipping amount as a separate line item
                     $lineItems[] = [
                         'price_data' => [
-                            'currency' => 'usd',
+                            'currency' => 'gbp',
                             'product_data' => [
                                 'name' => 'Shipping',
                             ],
@@ -1101,8 +1349,8 @@ class CheckoutController extends Controller
                         'payment_method_types' => ['card'],
                         'line_items' => $lineItems,
                         'mode' => 'payment',
-                        'success_url' => 'https://logfeller-payment.cyberx-infosystem.us/success?orderId=' . $orderId,
-                        'cancel_url' => 'https://logfeller-payment.cyberx-infosystem.us/cancel?orderId=' . $orderId,
+                        'success_url' => 'https://logfeller-payment.cyberx-infosystem.us/success/orderId=' . $orderId,
+                        'cancel_url' => 'https://logfeller-payment.cyberx-infosystem.us/cancel/orderId=' . $orderId,
                         'metadata' => [
                             'order_id' => $orderId,
                         ],
@@ -1126,6 +1374,24 @@ class CheckoutController extends Controller
             return response()->json(['status' => 'failed', 'message' => $e->getMessage()], 422);
         }
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     public function fetchPaymentDetails(Request $request)
     {

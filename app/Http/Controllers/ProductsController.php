@@ -124,7 +124,7 @@ class ProductsController extends Controller
                 $variant->name = $variantName;
                 $variant->sale_price = $request->input('variant_price')[$index];
                 $variant->save();
-            }
+            }   
 
         } else {
             $product = new Products();

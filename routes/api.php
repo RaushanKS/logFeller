@@ -41,6 +41,8 @@ Route::group(['prefix' => 'v1', 'namespace' => 'Api', 'middleware' => 'api'], fu
     Route::get('/fetch-user', [UserController::class, 'fetchUser']);
     Route::post('/password-change', [UserController::class, 'changePassword']);
 
+    Route::post('/delete-account', [UserController::class, 'deleteUserAccount']);
+
     //Delivery Address
     Route::post('/add-address', [UserController::class, 'addAddress']);
     Route::get('/fetch-single-address/{id}', [UserController::class, 'fetchSingleAddress']);

@@ -382,6 +382,45 @@ class UserController extends Controller
         }
     }
 
+    public function deleteUserAccount(Request $request)
+    {
+        try {
+            $inputs = $request->all();
+            $validatedData = Validator::make($inputs, [
+                'password' => 'bail|required|min:8'
+            ]);
+
+            if ($validatedData->fails()) {
+                $errors = $validatedData->errors();
+                $transformed = [];
+                foreach ($errors->all() as $message) {
+                    $transformed[] = $message;
+                }
+                return response()->json(['status' => 'failed', 'message' => $transformed], 422);
+            }
+
+            $password = $inputs['password'];
+            $user = User::where('id', $this->user_id)->first();
+            if (empty($user)) {
+                return response()->json(['status' => 'failed', 'message' => 'User not found !'], 404);
+            }
+
+            if (!Hash::check($password, $user->password)) {
+                return response()->json(['status' => 'failed', 'message' => 'Incorrect old password!'], 422);
+            }
+
+            $accountDelete = User::where('id', $this->user_id)->delete();
+            // $user = User::where('id', $userId)->update(['status' => 0]);
+            if ($accountDelete) {
+                return response()->json(['status' => 'success', 'message' => 'Account deleted successfully!'], 200);
+            } else {
+                return response()->json(['status' => 'Failed', 'message' => 'Something went wrong, please try again!'], 500);
+            }
+        } catch (Exception $e) {
+            return response()->json(['status' => 'failed', 'message' => $e->getMessage()], 500);
+        }
+    }
+
     public function invoke()
     {
         try {

@@ -115,10 +115,24 @@ class AuthController extends Controller
                     return response()->json(['status' => 'failed', 'message' => $transformed], 422);
                 }
             }
-            $user = User::join('user_role', 'user_role.user_id', '=', 'users.id')->where('users.email', $request->email)->withTrashed()->first(['users.*', 'user_role.role_id', 'user_role.id as userRoleId']);
+
+            // Check if email already exists and is verified
+            $user = User::join('user_role', 'user_role.user_id', '=', 'users.id')
+            ->where('users.email', $request->email)
+            ->whereNull('users.email_verified_at')
+            ->where('users.status', 0)
+            ->withTrashed()
+            ->first(['users.*', 'user_role.role_id', 'user_role.id as userRoleId']);
+
+            if ($user) {
+                DB::table('user_role')->where('user_id', $user->id)->delete();
+
+                User::where('id', $user->id)->forceDelete();
+            }
+            $user = User::join('user_role', 'user_role.user_id', '=', 'users.id')->where('users.email', $request->email)->whereNotNull('users.email_verified_at')->withTrashed()->first(['users.*', 'user_role.role_id', 'user_role.id as userRoleId']);
             if ($user) {
                 return response()->json(['status' => 'failed', 'message' => 'Email already exists'], 403);
-            }
+            } 
             $tokenAdd = Str::random(64);
             $user = User::create(array_merge(
                 $validatedData->validated(),
