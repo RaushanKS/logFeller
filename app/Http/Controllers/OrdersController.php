@@ -153,7 +153,8 @@ class OrdersController extends Controller
         $orderItems = OrderItems::where('order_id', $id)
             ->with(['product.images', 'product.variants'])
             ->get();
-        $shippings = Shipping::where('order_id', $id)->withTrashed()->first();
+        // $shippings = Shipping::where('', $id)->withTrashed()->first();
+        $shippings = Shipping::where('id', $order->address_id)->withTrashed()->first();
         $customer = User::where('id', $order->user_id)->withTrashed()->first();
 
         return view('order-details', compact(['orderItems', 'order', 'shippings', 'customer', 'orderCount']));

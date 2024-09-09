@@ -61,7 +61,7 @@ class ProductsController extends Controller
                 'product_name' => 'required|string',
                 'product_description' => 'required|string',
                 'product_status' => 'required|in:0,1',
-                'product_image.*' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:10240', 
+                'product_image.*' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:10240',
                 'variant_name.*' => 'required|string',
                 'variant_price.*' => 'required|numeric',
             ];
@@ -71,7 +71,7 @@ class ProductsController extends Controller
                 'product_price' => 'required|numeric',
                 'product_description' => 'required|string',
                 'product_status' => 'required|in:0,1',
-                'product_image.*' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:10240', 
+                'product_image.*' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:10240',
             ];
         }
 
@@ -124,8 +124,7 @@ class ProductsController extends Controller
                 $variant->name = $variantName;
                 $variant->sale_price = $request->input('variant_price')[$index];
                 $variant->save();
-            }   
-
+            }
         } else {
             $product = new Products();
             $product->name = $request->input('product_name');
@@ -138,7 +137,7 @@ class ProductsController extends Controller
             $product->save();
         }
 
-        if($product) {
+        if ($product) {
             $productId = $product->id;
 
             foreach ($imageData as $imagePath) {
@@ -152,7 +151,6 @@ class ProductsController extends Controller
         } else {
             return redirect()->back()->with('error', 'Something went wrong please try again!');
         }
-
     }
 
     public function getProducts(Request $request)
@@ -203,7 +201,7 @@ class ProductsController extends Controller
         }
 
         $records = $records->select('products.*')
-        ->skip($start)
+            ->skip($start)
             ->take($rowPerPage)
             ->get();
         $data_arr = array();
@@ -338,7 +336,7 @@ class ProductsController extends Controller
 
             $product->save();
 
-            if($product->save()) {
+            if ($product->save()) {
                 //update product specification
                 ProductVariant::where('product_id', $product->id)->forceDelete();
                 foreach ($request->input('variant_name', []) as $key => $variantText) {
@@ -422,7 +420,7 @@ class ProductsController extends Controller
                     foreach ($productImages as $prodImage) {
                         $imagePath = public_path($prodImage->image_path);
                         if (file_exists($imagePath)) {
-                            @unlink($imagePath); 
+                            @unlink($imagePath);
                         }
                         $prodImage->forceDelete();
                     }

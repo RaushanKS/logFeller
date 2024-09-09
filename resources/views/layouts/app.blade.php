@@ -145,7 +145,7 @@
 
 
                 <div class="app-brand demo ">
-                    <a href="index.html" class="app-brand-link">
+                    <a href="/dashboard" class="app-brand-link">
                         <span class="app-brand-logo demo">
                             <img src="{{ asset('assets/img/icons/logo1.jpg') }}" alt="auth-login-cover" class="img-fluid my-5 auth-illustration">
                             {{-- <svg width="32" height="22" viewBox="0 0 32 22" fill="none"

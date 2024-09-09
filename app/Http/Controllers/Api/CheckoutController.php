@@ -34,7 +34,7 @@ class CheckoutController extends Controller
 
     public function __construct()
     {
-        $this->middleware('auth:api', ['except' => ['addToCart', 'updateCart', 'removeFromCart', 'fetchCarts', 'orderCreate', 'paymentSuccess', 'orderUpdate', 'couponApply', 'shippingCharge', 'couponRemove', 'orderList', 'orderItemsList', 'orderCancel', 'fetchPaymentDetails', 'fetchCoupons', 'stripeForApple', 'fetchPaymentDetails']]);
+        $this->middleware('auth:api', ['except' => ['addToCart', 'updateCart', 'removeFromCart', 'fetchCarts', 'orderCreate', 'paymentSuccess', 'orderUpdate', 'couponApply', 'shippingCharge', 'couponRemove', 'orderList', 'orderItemsList', 'orderCancel', 'fetchCoupons', 'stripeForApple', 'fetchPaymentDetails']]);
         $this->middleware(function ($request, $next) {
             $checkToken = $this->invoke();
             if ($checkToken) {
@@ -590,7 +590,7 @@ class CheckoutController extends Controller
             if ($validator->fails()) {
                 return redirect()->back()->with('error', $validator->errors()->first());
             }
-            $deliveryChargePerBag = 10; // in GBP
+            $deliveryChargePerBag = 10;
             $totalDeliveryCharge = 0;
 
             foreach ($inputs['item'] as $item) {
@@ -685,7 +685,8 @@ class CheckoutController extends Controller
             $rest = 'LF' . $userId . $threeNumberLast;
 
             if ($inputs['payment_method'] == 'stripe') {
-                $stripe = new \Stripe\StripeClient('sk_test_51P3tGMIVnUY0WCEQxHNL3YHoZrqknskGyhCxvoNYgp3WXlwqMdpwZlY4XrdXDydWEokpgNMGNDwPysZ4lSCQ9l2o00JU1IB5hx'); 
+                // $stripe = new \Stripe\StripeClient('sk_test_51P3tGMIVnUY0WCEQxHNL3YHoZrqknskGyhCxvoNYgp3WXlwqMdpwZlY4XrdXDydWEokpgNMGNDwPysZ4lSCQ9l2o00JU1IB5hx'); // test key
+                $stripe = new \Stripe\StripeClient('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');
 
                 $deliveryCharge = $inputs['shippingAmount'];
                 // if ($distance > 20) {
@@ -735,7 +736,7 @@ class CheckoutController extends Controller
                     'ephemeralKey' => $ephemeralKey->secret,
                     'customer' => $customer->id,
                     'publishableKey' => 'pk_live_51PiyFcAiBmzIhYUNkEv5BkDyHmibaVhCR26BTspiiHt8VZUokgaRurLmhQG6SJthUjs4eEzfV2i3oOCjMeL3va2200Tf9Jn3Jj'
-                    // 'publishableKey' => 'pk_test_51P3tGMIVnUY0WCEQUFadAdAUGWREQ5j7pZbzu70S6jWy8hQ9W7xCHwDPYf8TP9XHGLc9Yra0UNdisNroSq3pbXML00lkwC29gm' test key
+                    // 'publishableKey' => 'pk_test_51P3tGMIVnUY0WCEQUFadAdAUGWREQ5j7pZbzu70S6jWy8hQ9W7xCHwDPYf8TP9XHGLc9Yra0UNdisNroSq3pbXML00lkwC29gm' // test key
                 ];
 
                 return response()->json(['status' => 'success', 'paymentDetails' => $paymentData, 'paymentIntent' => $paymentIntent], 200);
@@ -807,7 +808,7 @@ class CheckoutController extends Controller
             ];
             // echo ($inputs['payAmount']); exit;
             $customMessages = [
-                'required' => 'Some information messing Please Try again!',
+                'required' => 'Some information missing Please Try again!',
             ];
             $validator = Validator::make($request->all(), $rules, $customMessages);
             if ($validator->fails()) {
@@ -827,7 +828,8 @@ class CheckoutController extends Controller
             $threeNumberLast = rand(10000000000000, 99999999999999);
             $rest = 'LF' . $userId . $threeNumberLast;
 
-            Stripe::setApiKey('sk_test_51P3tGMIVnUY0WCEQxHNL3YHoZrqknskGyhCxvoNYgp3WXlwqMdpwZlY4XrdXDydWEokpgNMGNDwPysZ4lSCQ9l2o00JU1IB5hx');
+            // Stripe::setApiKey('sk_test_51P3tGMIVnUY0WCEQxHNL3YHoZrqknskGyhCxvoNYgp3WXlwqMdpwZlY4XrdXDydWEokpgNMGNDwPysZ4lSCQ9l2o00JU1IB5hx');    test key
+            Stripe::setApiKey('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');
             $paymentIntentId = $request->input('txn_id');
 
             // Retrieve the payment intent from Stripe
@@ -920,6 +922,23 @@ class CheckoutController extends Controller
                         }
                     }
                     $orderData = array('order_id' => $order->order_id);
+
+                    $user = User::where('id', $userId)->first();
+                    $email = $user->email;
+                    $name = $user->name;
+                    $subject = 'Payment Confirmation';
+
+                    $data = [
+                            'name' => $name,
+                            'amount' => number_format($paymentIntent->amount / 100, 2),
+                        ];
+
+                    Mail::send('payment_confirmation', $data, function ($message) use ($email, $name, $subject) {
+                        $message->to($email, $name)
+                        ->subject($subject)
+                        ->from(env('MAIL_FROM_ADDRESS'), env('APP_NAME'));
+                    });
+
                     return response()->json(['status' => 'success', 'message' => 'Order placed successfully', 'data' => $orderData], 200);
                 } else {
                     return response()->json(['status' => 'failed', 'message' => 'Something went wrong'], 422);
@@ -1218,7 +1237,6 @@ class CheckoutController extends Controller
                             ->first();
                         }
 
-                        // Add debug information
                         if (empty($discount)) {
                             // return response()->json(['status' => 'failed', 'message' => 'Invalid coupon or coupon has expired.'], 422);
                             if (!empty($request->input('item'))) {
@@ -1373,34 +1391,17 @@ class CheckoutController extends Controller
         }
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     public function fetchPaymentDetails(Request $request)
     {
         try {
             $inputs = $request->all();
 
-            $userId = $this->user_id;
+            // $userId = $this->user_id;
 
             $order = Orders::where('id', $inputs['orderId'])->first();
+            $userId = $order->user_id;
 
-            $session_id = $order->traction_id;
+            $session_id = $order->transaction_id;
             Stripe::setApiKey(env('STRIPE_SECRET'));
             $session = \Stripe\Checkout\Session::retrieve($session_id);
 
@@ -1413,12 +1414,12 @@ class CheckoutController extends Controller
 
             if (isset($session->payment_intent)) {
                 $paymentIntent = \Stripe\PaymentIntent::retrieve($session->payment_intent);
-
+                // echo $paymentIntent->status; exit; 
                 $orderId = $inputs['orderId'];
                 $orderCreate = Orders::find($orderId);
                 if ($orderCreate) {
-                    $orderCreate->traction_id = $paymentIntent->id;
-                    $order->payment_status = $paymentIntent->status;
+                    $orderCreate->transaction_id = $paymentIntent->id;
+                    $orderCreate->payment_status = $paymentIntent->status;
                     $orderCreate->save();
 
                     $orderItems = OrderItems::where('order_id', $orderId)->get();
@@ -1431,6 +1432,22 @@ class CheckoutController extends Controller
                     }
                 }
             }
+            
+            $user = User::where('id', $userId)->first();
+            $email = $user->email;
+            $name = $user->name;
+            $subject = 'Payment Confirmation';
+
+            $data = [
+                'name' => $name,
+                'amount' => number_format($paymentIntent->amount / 100, 2), 
+            ];
+
+            Mail::send('payment_confirmation', $data, function ($message) use ($email, $name, $subject) {
+                $message->to($email, $name)
+                    ->subject($subject)
+                    ->from(env('MAIL_FROM_ADDRESS'), env('APP_NAME'));
+            });
 
             return response()->json([
                 'status' => 'success',
@@ -1603,7 +1620,7 @@ class CheckoutController extends Controller
                     $payPercent = ($totalPayAmount * 100) / $totalAmount;
                     $payPercentRound = number_format((float)$payPercent, 2, '.', '');
                     $discountPercent = 100 - $payPercentRound;
-                    $saleAmount = ($discountPercent > 0) ? ($order->quantity * $order->sale_price * $discountPercent) / 100 : number_format((float)$order->quantity * $order->sale_price, 2, '.', '');
+                    $saleAmount = ($discountPercent > 0) ? ($order->quantity * $order->sale_price * $discountPercent) / 100 : number_format((float)($order->quantity * $order->sale_price), 2, '.', '');
 
                     $salePrice = "{$currencySymbol}{$order->sale_price}";
                     $orderAmount = "{$currencySymbol}{$saleAmount}";

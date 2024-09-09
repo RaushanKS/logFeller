@@ -24,6 +24,7 @@ class Orders extends Model
         'total_amount',
         'pay_amount',
         'discount_amount',
+        'shipping_amount',
         'transaction_id',
         'payment_type',
         'payment_status',

@@ -243,7 +243,7 @@
                                 <img src="{{url($customer->image)}}" alt="Avatar" class="rounded-circle">
                             </div>
                             <div class="d-flex flex-column">
-                                <a href="app-user-view-account.html" class="text-body text-nowrap">
+                                <a href="#" class="text-body text-nowrap">
                                     <h6 class="mb-0">{{$shippings->name}}</h6>
                                 </a>
                                 {{-- <small class="text-muted">Customer ID: #58909</small> --}}
