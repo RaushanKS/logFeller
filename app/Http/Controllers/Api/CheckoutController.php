@@ -923,6 +923,7 @@ class CheckoutController extends Controller
                     }
                     $orderData = array('order_id' => $order->order_id);
 
+                    //email to user for payment confirmation
                     $user = User::where('id', $userId)->first();
                     $email = $user->email;
                     $name = $user->name;
@@ -935,6 +936,30 @@ class CheckoutController extends Controller
 
                     Mail::send('payment_confirmation', $data, function ($message) use ($email, $name, $subject) {
                         $message->to($email, $name)
+                        ->subject($subject)
+                        ->from(env('MAIL_FROM_ADDRESS'), env('APP_NAME'));
+                    });
+
+                    //email to admin with order details
+                    $orderItems = OrderItems::where('order_id', $orderId)
+                    ->with(['product', 'variation'])
+                    ->get();
+
+                    $user = User::where('id', $userId)->first();
+                    $email = $user->email;
+                    $name = $user->name;
+
+                    $data = [
+                            'name' => $name,
+                            'email' => $email,
+                            'orderItems' => $orderItems,
+                        ];
+
+                    $adminEmail = "raushan.cyberxinfosystem@gmail.com";
+                    $subject = "Order Confirmation - Order #$orderId";
+
+                    Mail::send('admin_order_email', $data, function ($message) use ($adminEmail, $name, $subject) {
+                        $message->to($adminEmail, $name)
                         ->subject($subject)
                         ->from(env('MAIL_FROM_ADDRESS'), env('APP_NAME'));
                     });
@@ -1183,7 +1208,6 @@ class CheckoutController extends Controller
                 if ($order) {
                     $orderId = $order->id;
                     $applyCoupon = $request->input('applyCoupon');
-                    $address = $request->input('address');
 
                     if (!empty($applyCoupon)) {
                         $discount = Discount::where('id', $applyCoupon['coupon_id'])->first();
@@ -1396,7 +1420,7 @@ class CheckoutController extends Controller
         try {
             $inputs = $request->all();
 
-            // $userId = $this->user_id;
+            $userId = $this->user_id;
 
             $order = Orders::where('id', $inputs['orderId'])->first();
             $userId = $order->user_id;
@@ -1433,6 +1457,7 @@ class CheckoutController extends Controller
                 }
             }
             
+            //email to user for payment confirmation
             $user = User::where('id', $userId)->first();
             $email = $user->email;
             $name = $user->name;
@@ -1448,6 +1473,33 @@ class CheckoutController extends Controller
                     ->subject($subject)
                     ->from(env('MAIL_FROM_ADDRESS'), env('APP_NAME'));
             });
+
+
+            //email to admin with order details
+            $orderItems = OrderItems::where('order_id', $orderId)
+            ->with(['product', 'variation']) 
+            ->get();
+
+            $user = User::where('id', $userId)->first();
+            $email = $user->email;
+            $name = $user->name;
+
+            $data = [
+                'name' => $name,
+                'email' => $email,
+                'orderItems' => $orderItems, 
+            ];
+
+            $adminEmail = "raushan.cyberxinfosystem@gmail.com";
+            $subject = "Order Confirmation - Order #$orderId";
+
+            Mail::send('admin_order_email', $data, function ($message) use ($adminEmail, $name, $subject) {
+                $message->to($adminEmail, $name)
+                ->subject($subject)
+                ->from(env('MAIL_FROM_ADDRESS'), env('APP_NAME'));
+            });
+
+
 
             return response()->json([
                 'status' => 'success',

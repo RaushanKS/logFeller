@@ -14,14 +14,14 @@
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3">
 
             <div class="d-flex flex-column justify-content-center gap-2 gap-sm-0">
-                <h5 class="mb-1 mt-3 d-flex flex-wrap gap-2 align-items-end">Order #{{$order->order_id}} 
+                <h5 class="mb-1 mt-3 d-flex flex-wrap gap-2 align-items-end">Order #{{ $order->order_id }}
                     {{-- <span class="badge bg-label-success">Paid</span> <span class="badge bg-label-info">Ready to Pickup</span> --}}
                 </h5>
                 <?php
                 $timestemp = strtotime($order->created_at);
                 $date = date('d M y', $timestemp);
                 ?>
-                <p class="text-body">{{$date}} <span id="orderYear"></span></p>
+                <p class="text-body">{{ $date }} <span id="orderYear"></span></p>
             </div>
             {{-- <div class="d-flex align-content-center flex-wrap gap-2">
                 <button class="btn btn-label-danger delete-order">Delete Order</button>
@@ -38,7 +38,7 @@
                         {{-- <h6 class="m-0"><a href=" javascript:void(0)">Edit</a></h6> --}}
                     </div>
                     <?php
-                    $subTotalAmount = 0.00;
+                    $subTotalAmount = 0.0;
                     ?>
                     <div class="card-datatable table-responsive">
                         {{-- <table class="datatables-order-details table border-top">
@@ -54,8 +54,8 @@
                                 </tr>
                             </thead>
                             <tbody class="table-border-bottom-0">
-                                @if($orderItems)
-                                @foreach($orderItems as $items)
+                                @if ($orderItems)
+                                @foreach ($orderItems as $items)
                                     <tr>
                                         <td><i class="ti ti-brand-angular ti-lg text-danger me-3"></i> <span class="fw-medium">Angular Project</span></td>
                                         <td>Albert Cook</td>
@@ -92,23 +92,27 @@
                                 <tr>
                                     <th></th>
                                     <th class="w-50">Products</th>
-                                    <th class="w-25">Payment Method</th>
-                                    <th class="w-25">Price</th>
+                                    {{-- <th class="w-25">Payment Method</th> --}}
+                                    <th class="w-25">Price/Unit</th>
                                     <th class="w-25">Qty</th>
                                     <th>Total</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody class="table-border-bottom-0">
-                                @if($orderItems)
-                                    @foreach($orderItems as $items)
+                                @if ($orderItems)
+                                    @foreach ($orderItems as $items)
                                         <tr>
                                             <td>
-                                                <ul class="list-unstyled users-list m-0 avatar-group d-flex align-items-center">
-                                                    @if(optional($items->product)->images)
-                                                        @foreach($items->product->images as $image)
-                                                            <li data-bs-toggle="tooltip" data-popup="tooltip-custom" data-bs-placement="top" class="avatar avatar-xs pull-up" title="{{ $items->product->name }}">
-                                                                <img src="{{ asset($image->image_path) }}" alt="Product Image" class="rounded-circle">
+                                                <ul
+                                                    class="list-unstyled users-list m-0 avatar-group d-flex align-items-center">
+                                                    @if (optional($items->product)->images)
+                                                        @foreach ($items->product->images as $image)
+                                                            <li data-bs-toggle="tooltip" data-popup="tooltip-custom"
+                                                                data-bs-placement="top" class="avatar avatar-xs pull-up"
+                                                                title="{{ $items->product->name }}">
+                                                                <img src="{{ asset($image->image_path) }}"
+                                                                    alt="Product Image" class="rounded-circle">
                                                             </li>
                                                         @endforeach
                                                     @else
@@ -117,20 +121,26 @@
                                                 </ul>
                                             </td>
                                             <td>
-                                                <span class="fw-medium">{{ optional($items->product)->name ?? 'N/A' }}</span>
+                                                <span
+                                                    class="fw-medium">{{ optional($items->product)->name ?? 'N/A' }}</span>
                                             </td>
-                                            <td>{{ $order->payment_type ?? 'N/A' }}</td>
+                                            {{-- <td>{{ $order->payment_type ?? 'N/A' }}</td> --}}
                                             <td>
-                                                <span class="badge bg-label-primary me-1">£{{ number_format($items->sale_price, 2) }}</span>
+                                                <span
+                                                    class="badge bg-label-primary me-1">£{{ number_format($items->sale_price, 2) }}</span>
                                             </td>
                                             <td>{{ $items->quantity }}</td>
                                             <td>£{{ number_format($items->quantity * $items->sale_price, 2) }}</td>
                                             <?php
-                                                $subTotalAmount = $subTotalAmount + ($items->quantity * $items->sale_price);
+                                            $subTotalAmount = $subTotalAmount + $items->quantity * $items->sale_price;
                                             ?>
                                             <td>
-                                                <a class="action-class view-access editIcon" data-url="{{ URL::to('/') }}/orders/items/view/{{ $items->id }}" href="#" onclick="viewOrderDetailModal(this)" id="view_{{ $items->id }}">
-                                                    <span class="badge bg-label-success"><i class="far fa-eye" aria-hidden="true"></i></span>
+                                                <a class="action-class view-access editIcon"
+                                                    data-url="{{ URL::to('/') }}/orders/items/view/{{ $items->id }}"
+                                                    href="#" onclick="viewOrderDetailModal(this)"
+                                                    id="view_{{ $items->id }}">
+                                                    <span class="badge bg-label-success"><i class="far fa-eye"
+                                                            aria-hidden="true"></i></span>
                                                 </a>
                                             </td>
                                         </tr>
@@ -144,19 +154,23 @@
                             <div class="order-calculations">
                                 <div class="d-flex justify-content-between mb-2">
                                     <span class="w-px-100 text-heading">Total:</span>
-                                    <h6 class="mb-0">£{{number_format($subTotalAmount, 2)}}</h6>
+                                    <h6 class="mb-0">£{{ number_format($subTotalAmount, 2) }}</h6>
                                 </div>
                                 <div class="d-flex justify-content-between mb-2">
-                                    <span class="w-px-100 text-heading">Total:</span>
-                                    <h6 class="mb-0">£{{number_format($order->shipping_amount, 2)}}</h6>
+                                    <span class="w-px-100 text-heading">Shipping:</span>
+                                    <h6 class="mb-0">£{{ number_format($order->shipping_amount, 2) }}</h6>
                                 </div>
                                 <div class="d-flex justify-content-between mb-2">
                                     <span class="w-px-100 text-heading">Discount:</span>
-                                    <h6 class="mb-0">£{{($order->discount_amount) ? number_format($order->discount_amount, 2) : 0}}</h6>
+                                    <h6 class="mb-0">
+                                        £{{ $order->discount_amount ? number_format($order->discount_amount, 2) : 0 }}
+                                    </h6>
                                 </div>
                                 <div class="d-flex justify-content-between">
                                     <h6 class="w-px-100 mb-0">Subtotal:</h6>
-                                    <h6 class="mb-0">£{{number_format($subTotalAmount-$order->discount_amount, 2)}}</h6>
+                                    <h6 class="mb-0">
+                                        £{{ number_format($subTotalAmount + $order->shipping_amount - $order->discount_amount, 2) }}
+                                    </h6>
                                 </div>
                             </div>
                         </div>
@@ -240,11 +254,11 @@
                     <div class="card-body">
                         <div class="d-flex justify-content-start align-items-center mb-4">
                             <div class="avatar me-2">
-                                <img src="{{url($customer->image)}}" alt="Avatar" class="rounded-circle">
+                                <img src="{{ url($customer->image) }}" alt="Avatar" class="rounded-circle">
                             </div>
                             <div class="d-flex flex-column">
                                 <a href="#" class="text-body text-nowrap">
-                                    <h6 class="mb-0">{{$shippings->name}}</h6>
+                                    <h6 class="mb-0">{{ $shippings->name }}</h6>
                                 </a>
                                 {{-- <small class="text-muted">Customer ID: #58909</small> --}}
                             </div>
@@ -253,15 +267,15 @@
                             <span
                                 class="avatar rounded-circle bg-label-success me-2 d-flex align-items-center justify-content-center"><i
                                     class='ti ti-shopping-cart ti-sm'></i></span>
-                            <h6 class="text-body text-nowrap mb-0">{{$orderCount}} Orders</h6>
+                            <h6 class="text-body text-nowrap mb-0">{{ $orderCount }} Orders</h6>
                         </div>
                         <div class="d-flex justify-content-between">
                             <h6>Contact info</h6>
                             {{-- <h6><a href=" javascript:void(0)" data-bs-toggle="modal" data-bs-target="#editUser">Edit</a></h6> --}}
                         </div>
                         <hr>
-                        <p class=" mb-1">Email: {{$customer->email}}</p>
-                        <p class=" mb-0">Mobile: {{$shippings->phone_code}} {{$shippings->mobile}}</p>
+                        <p class=" mb-1">Email: {{ $customer->email }}</p>
+                        <p class=" mb-0">Mobile: {{ $shippings->phone_code }} {{ $shippings->mobile }}</p>
                     </div>
                 </div>
 
@@ -273,7 +287,8 @@
                     </div>
                     <hr>
                     <div class="card-body">
-                        <p class="mb-0">{{$shippings->street}} <br>{{$shippings->landmark}} <br>{{$shippings->city}}, {{$shippings->code}}<br>{{$shippings->state}}</p>
+                        <p class="mb-0">{{ $shippings->street }} <br>{{ $shippings->landmark }}
+                            <br>{{ $shippings->city }}, {{ $shippings->code }}<br>{{ $shippings->state }}</p>
                     </div>
 
                 </div>
@@ -282,20 +297,20 @@
     </div>
     <!-- / Content -->
 
-        <div class="col-lg-4 col-md-6">
-            <!-- Extra Large Modal -->
-            <div class="modal fade" id="viewOrderDetailModal" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog modal-lg" role="document">
-                    <div class="modal-content">
+    <div class="col-lg-4 col-md-6">
+        <!-- Extra Large Modal -->
+        <div class="modal fade" id="viewOrderDetailModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
                     <div class="modal-header">
                         {{-- <h5 class="modal-title" id="exampleModalLabel4">Enquiry Details</h5> --}}
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        
-                    </div>
+
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 @endsection

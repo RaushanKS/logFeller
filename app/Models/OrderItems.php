@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Products;
+use App\Models\ProductVariant;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notifiable;
@@ -33,4 +34,10 @@ class OrderItems extends Model
     {
         return $this->belongsTo(Products::class, 'product_id');
     }
+
+    public function variation()
+    {
+        return $this->belongsTo(ProductVariant::class, 'variation_id');
+    }
+
 }

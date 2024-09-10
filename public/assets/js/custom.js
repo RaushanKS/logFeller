@@ -2041,9 +2041,9 @@ if ($("#ordersTables").length > 0) {
             {
                 data: "shipping_amount",
             },
-            {
-                data: "payment_type",
-            },
+            // {
+            //     data: "payment_type",
+            // },
             {
                 data: "created_at",
             },
@@ -2063,7 +2063,7 @@ if ($("#ordersTables").length > 0) {
                 },
             },
             {
-                aTargets: [10],
+                aTargets: [9],
                 mData: "id",
                 mRender: function (data, type, row, meta) {
                     let items = baseUrl + "/orders/items/view/" + row.id;
@@ -2080,7 +2080,7 @@ if ($("#ordersTables").length > 0) {
                 },
             },
             {
-                aTargets: [9],
+                aTargets: [8],
                 mData: "id",
                 mRender: function (data, type, row, meta) {
                     if (row.status == 1) {
@@ -2097,7 +2097,7 @@ if ($("#ordersTables").length > 0) {
                 },
             },
             {
-                aTargets: [11],
+                aTargets: [10],
                 mData: "id",
                 mRender: function (data, type, row, meta) {
                     let deleteUrl = baseUrl + "/orders/delete/" + row.id;
@@ -2201,7 +2201,7 @@ function viewOrderDetailModal(element) {
 
             // Product details
             htmlContent += '<h3>Product Details</h3><hr>';
-            htmlContent += '<p><strong>Name:</strong> ' + product.name + ' - ' + variation.name + '</p>';
+            htmlContent += '<p><strong>Name:</strong> ' + (variation  ? product.name + ' - ' + variation.name : product.name)+ '</p>';
             htmlContent += '<p><strong>Order Number:</strong> ' + orderItem.order_number + '</p>';
             htmlContent += '<p><strong>Sale Price:</strong> £' + (variation ? variation.sale_price : orderItem.sale_price) + '</p>';
             htmlContent += '<p><strong>Quantity:</strong> ' + orderItem.quantity + '</p>';
