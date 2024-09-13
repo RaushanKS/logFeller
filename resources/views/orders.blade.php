@@ -27,7 +27,7 @@
                 <th>Shipping Amount</th>
                 {{-- <th>Payment Method</th> --}}
                 <th>Created At</th>
-                <th>Status</th>
+                <th>Payment Status</th>
                 <th>Total Items</th>
                 <th>Action</th>
             </tr>

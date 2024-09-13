@@ -140,7 +140,7 @@ class AuthController extends Controller
                     'name_en' => $request->name,
                     'email' => $request->email,
                     'password' => bcrypt($request->password),
-                    'image' => 'profile/images.png',
+                    'image' => 'assets/img/avatars/16.png',
                     'status' => 0,
                     'verification_token' => $tokenAdd,
                 ]

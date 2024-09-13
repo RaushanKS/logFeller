@@ -132,6 +132,28 @@ class UserController extends Controller
         }
     }
 
+    public function deleteUsersAll(Request $request)
+    {
+        if (!empty($request->ids) && count($request->ids) > 0) {
+            foreach ($request->ids as $ids) {
+                $user = User::find($ids);
+                if ($user) {
+                    $user->delete();
+                }
+            }
+            Session::flash('success', __('Delete successfully'));
+            return response()->json([
+                'success' => true,
+                'message' => 'Delete successfully',
+            ]);
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please select at least one',
+            ]);
+        }
+    }
+
     public function updateUserStatus(Request $request)
     {
         if ($request->ajax()) {

@@ -254,7 +254,7 @@
                     <div class="card-body">
                         <div class="d-flex justify-content-start align-items-center mb-4">
                             <div class="avatar me-2">
-                                <img src="{{ url($customer->image) }}" alt="Avatar" class="rounded-circle">
+                                <img src="{{ url(($customer->image) ? $customer->image : 'assets/img/avatars/16.png') }}" alt="Avatar" class="rounded-circle">
                             </div>
                             <div class="d-flex flex-column">
                                 <a href="#" class="text-body text-nowrap">

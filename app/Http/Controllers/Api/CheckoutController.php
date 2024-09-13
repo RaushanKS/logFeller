@@ -955,7 +955,7 @@ class CheckoutController extends Controller
                             'orderItems' => $orderItems,
                         ];
 
-                    $adminEmail = "raushan.cyberxinfosystem@gmail.com";
+                    $adminEmail = "logfeller@gmail.com";
                     $subject = "Order Confirmation - Order #$orderId";
 
                     Mail::send('admin_order_email', $data, function ($message) use ($adminEmail, $name, $subject) {
@@ -1490,7 +1490,7 @@ class CheckoutController extends Controller
                 'orderItems' => $orderItems, 
             ];
 
-            $adminEmail = "raushan.cyberxinfosystem@gmail.com";
+            $adminEmail = "logfeller@gmail.com";
             $subject = "Order Confirmation - Order #$orderId";
 
             Mail::send('admin_order_email', $data, function ($message) use ($adminEmail, $name, $subject) {

@@ -143,77 +143,77 @@ if ($("#userTable").length > 0) {
     $("#userTable").DataTable({
         dom: '<"card-header border-bottom p-1"<"head-label"><"dt-action-buttons text-end me-2"B>><"user_status mt-50 width-200"><"d-flex justify-content-between align-items-center mx-0 row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>t<"d-flex justify-content-between mx-0 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
 
-        // buttons: [
-        //     {
-        //         className: "btn btn-danger me-2 DeleteALL",
-        //         text: "Delete",
-        //     },
-        //     {
-        //         className: "btn btn-primary onlineAll",
-        //         text: "Active",
-        //     },
-        //     {
-        //         className: "btn btn-warning offlineAll",
-        //         text: "InActive",
-        //     },
-        //     {
-        //         extend: "collection",
-        //         className: "btn btn-outline-info dropdown-toggle me-2",
-        //         text: "Export",
-        //         buttons: [
-        //             {
-        //                 extend: "print",
-        //                 text: "Print",
-        //                 className: "dropdown-item",
-        //                 exportOptions: {
-        //                     columns: [1, 2, 3],
-        //                 },
-        //             },
-        //             {
-        //                 extend: "csv",
-        //                 text: "Csv",
-        //                 className: "dropdown-item",
-        //                 exportOptions: {
-        //                     columns: [1, 2, 3],
-        //                 },
-        //             },
-        //             {
-        //                 extend: "excel",
-        //                 text: "Excel",
-        //                 className: "dropdown-item",
-        //                 exportOptions: {
-        //                     columns: [1, 2, 3],
-        //                 },
-        //             },
-        //             {
-        //                 extend: "pdf",
-        //                 text: "Pdf",
-        //                 className: "dropdown-item",
-        //                 exportOptions: {
-        //                     columns: [1, 2, 3],
-        //                 },
-        //             },
-        //             {
-        //                 extend: "copy",
-        //                 text: "Copy",
-        //                 className: "dropdown-item",
-        //                 exportOptions: {
-        //                     columns: [1, 2, 3],
-        //                 },
-        //             },
-        //         ],
-        //         init: function (api, node, config) {
-        //             $(node).removeClass("btn-secondary");
-        //             $(node).parent().removeClass("btn-group");
-        //             setTimeout(function () {
-        //                 $(node)
-        //                     .closest(".dt-buttons")
-        //                     .removeClass("btn-group")
-        //                     .addClass("d-inline-flex");
-        //             }, 50);
-        //         },
-        //     },
-        // ],
+        buttons: [
+            {
+                className: "btn btn-danger me-2 DeleteALL",
+                text: "Delete",
+            },
+            // {
+            //     className: "btn btn-primary onlineAll",
+            //     text: "Active",
+            // },
+            // {
+            //     className: "btn btn-warning offlineAll",
+            //     text: "InActive",
+            // },
+            {
+                extend: "collection",
+                className: "btn btn-outline-info dropdown-toggle me-2",
+                text: "Export",
+                buttons: [
+                    {
+                        extend: "print",
+                        text: "Print",
+                        className: "dropdown-item",
+                        exportOptions: {
+                            columns: [1, 2, 3],
+                        },
+                    },
+                    {
+                        extend: "csv",
+                        text: "Csv",
+                        className: "dropdown-item",
+                        exportOptions: {
+                            columns: [1, 2, 3],
+                        },
+                    },
+                    {
+                        extend: "excel",
+                        text: "Excel",
+                        className: "dropdown-item",
+                        exportOptions: {
+                            columns: [1, 2, 3],
+                        },
+                    },
+                    {
+                        extend: "pdf",
+                        text: "Pdf",
+                        className: "dropdown-item",
+                        exportOptions: {
+                            columns: [1, 2, 3],
+                        },
+                    },
+                    {
+                        extend: "copy",
+                        text: "Copy",
+                        className: "dropdown-item",
+                        exportOptions: {
+                            columns: [1, 2, 3],
+                        },
+                    },
+                ],
+                init: function (api, node, config) {
+                    $(node).removeClass("btn-secondary");
+                    $(node).parent().removeClass("btn-group");
+                    setTimeout(function () {
+                        $(node)
+                            .closest(".dt-buttons")
+                            .removeClass("btn-group")
+                            .addClass("d-inline-flex");
+                    }, 50);
+                },
+            },
+        ],
         initComplete: function () {
             this.api()
                 .columns(6)
@@ -384,6 +384,69 @@ if ($("#userTable").length > 0) {
             }
         })
     });
+
+        $(".DeleteALL").on("click", function (e) {
+            let dt_user_table = $("#userTable").DataTable();
+            var rows_selected = dt_user_table.column(0).checkboxes.selected();
+            console.log(rows_selected.length);
+            if (rows_selected.length < 1) {
+                let html =
+                    '<div class="toast toast-autohide show" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="false"><div class="toast-header" style="background: #ff0000;color: #fafbfd;"><strong class="me-auto">Danger!</strong><small class="text-muted" style="color:#ffffff!important">just now</small><button type="button" class="ms-1 btn-close" data-bs-dismiss="toast" aria-label="Close"></button></div><div class="toast-body">Please select at least one</div></div>';
+                $(".messageShowAlert").append(html);
+                setTimeout(function () {
+                    $(".toast-autohide").remove();
+                }, 3000);
+                return false;
+            }
+            rows_selected = rows_selected.join(",");
+            rows_selected = rows_selected.split(",");
+            Swal.fire({
+                title: "Are you sure ?",
+                text: "You want to delete",
+                icon: "warning",
+                showCancelButton: false,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                // cancelButtonText: "No",
+                confirmButtonText: "Yes",
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        type: "POST",
+                        url: baseUrl + "/user/delete-all",
+                        data: {
+                            _token: $('meta[name="csrf-token"]').attr(
+                                "content"
+                            ),
+                            ids: rows_selected,
+                        },
+                        success: function (response) {
+                            if (response.success == true) {
+                                let html =
+                                    '<div class="toast toast-autohide show" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="false"><div class="toast-header" style="background: #288900;color: #f1f1f1;"><strong class="me-auto">Success</strong><small class="text-muted" style="color:#ffffff!important">just now</small><button type="button" class="ms-1 btn-close" data-bs-dismiss="toast" aria-label="Close"></button></div><div class="toast-body">' +
+                                    response.message +
+                                    "</div></div>";
+                                $(".messageShowAlert").append(html);
+                                setTimeout(function () {
+                                    $(".toast-autohide").remove();
+                                }, 3000);
+                                $(location).attr("href", window.location);
+                            } else {
+                                let html =
+                                    '<div class="toast toast-autohide show" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="false"><div class="toast-header" style="background: #ff0000;color: #fafbfd;"><strong class="me-auto">Danger!</strong><small class="text-muted" style="color:#ffffff!important">just now</small><button type="button" class="ms-1 btn-close" data-bs-dismiss="toast" aria-label="Close"></button></div><div class="toast-body">' +
+                                    response.message +
+                                    "</div></div>";
+                                $(".messageShowAlert").append(html);
+                                setTimeout(function () {
+                                    $(".toast-autohide").remove();
+                                }, 3000);
+                                $(location).attr("href", window.location);
+                            }
+                        },
+                    });
+                }
+            });
+        });
 }
 
 
@@ -1997,7 +2060,7 @@ if ($("#ordersTables").length > 0) {
                 .every(function () {
                     var column = this;
                     var select = $(
-                        '<select id="orderStatus" class="form-select text-capitalize"><option value=""> Select Status </option><option value="1">In-Process</option><option value="2">Completed</option><option value="3">Cancelled</option><option value="4">Refunded</option></select>'
+                        '<select id="orderStatus" class="form-select text-capitalize"><option value=""> Select Status </option><option value="succeeded">Completed</option><option value="pending">Pending</option>'
                     )
                         .appendTo(".user_status")
                         .on("change", function () {
@@ -2048,7 +2111,7 @@ if ($("#ordersTables").length > 0) {
                 data: "created_at",
             },
             {
-                data: "status",
+                data: "payment_status",
             },
             {
                 data: "totalItems",
@@ -2083,16 +2146,12 @@ if ($("#ordersTables").length > 0) {
                 aTargets: [8],
                 mData: "id",
                 mRender: function (data, type, row, meta) {
-                    if (row.status == 1) {
-                        return '<span class="badge bg-info bg-glow">In-Process</span>';
-                    } else if (row.status == 2) {
+                    if (row.payment_status == "succeeded") {
                         return '<span class="badge bg-success bg-glow">Completed</span>';
-                    } else if (row.status == 3) {
-                        return '<span class="badge bg-danger bg-glow">Cancelled</span>';
-                    } else if (row.status == 4) {
-                        return '<span class="badge bg-warning bg-glow">Refunded</span>';
+                    } else if (row.payment_status == "pending") {
+                        return '<span class="badge bg-warning bg-glow">Pending</span>';
                     } else {
-                        return '<span class="badge bg-secondary bg-glow">Under Review</span>'
+                        return '<span class="badge bg-danger bg-glow">Action Required</span>';
                     }
                 },
             },

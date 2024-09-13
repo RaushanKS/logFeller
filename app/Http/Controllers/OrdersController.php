@@ -53,7 +53,7 @@ class OrdersController extends Controller
         $totalRecords = Orders::select('count(*) as allcount');
 
         if ($columnName_arr[8]['search']['value'] != '') {
-            $totalRecords = $totalRecords->where('status', $columnName_arr[8]['search']['value']);
+            $totalRecords = $totalRecords->where('payment_status', $columnName_arr[8]['search']['value']);
         }
         $totalRecords = $totalRecords->count();
 
@@ -62,7 +62,7 @@ class OrdersController extends Controller
                 ->orWhere('payment_type', 'LIKE', '%' . $searchValue . '%');
         });
         if ($columnName_arr[8]['search']['value'] != '') {
-            $totalRecordsWithFilter = $totalRecordsWithFilter->where('status', $columnName_arr[8]['search']['value']);
+            $totalRecordsWithFilter = $totalRecordsWithFilter->where('payment_status', $columnName_arr[8]['search']['value']);
         }
 
         $totalRecordsWithFilter = $totalRecordsWithFilter->count();
@@ -77,7 +77,7 @@ class OrdersController extends Controller
                     ->orWhere('orders.payment_type', 'LIKE', '%' . $searchValue . '%');
             });
         if ($columnName_arr[8]['search']['value'] != '') {
-            $records = $records->where('status', $columnName_arr[8]['search']['value']);
+            $records = $records->where('payment_status', $columnName_arr[8]['search']['value']);
         }
 
         $records = $records->select('orders.*')
