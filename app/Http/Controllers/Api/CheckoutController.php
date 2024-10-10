@@ -37,13 +37,14 @@ class CheckoutController extends Controller
         $this->middleware('auth:api', ['except' => ['addToCart', 'updateCart', 'removeFromCart', 'fetchCarts', 'orderCreate', 'paymentSuccess', 'orderUpdate', 'couponApply', 'shippingCharge', 'couponRemove', 'orderList', 'orderItemsList', 'orderCancel', 'fetchCoupons', 'stripeForApple', 'fetchPaymentDetails']]);
         $this->middleware(function ($request, $next) {
             $checkToken = $this->invoke();
+            // echo $checkToken; exit;
             if ($checkToken) {
                 $this->user_id = $checkToken;
                 return $next($request);
             } else {
                 return response()->json(['status' => 'failed', 'message' => 'Authorization Failed'], 401);
             }
-        });
+        })->except('fetchPaymentDetails');
     }
 
     // public function addToCart(Request $request)
@@ -685,6 +686,7 @@ class CheckoutController extends Controller
             $rest = 'LF' . $userId . $threeNumberLast;
 
             if ($inputs['payment_method'] == 'stripe') {
+                // $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET'));
                 // $stripe = new \Stripe\StripeClient('sk_test_51P3tGMIVnUY0WCEQxHNL3YHoZrqknskGyhCxvoNYgp3WXlwqMdpwZlY4XrdXDydWEokpgNMGNDwPysZ4lSCQ9l2o00JU1IB5hx'); // test key
                 $stripe = new \Stripe\StripeClient('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');
 
@@ -735,8 +737,9 @@ class CheckoutController extends Controller
                     'paymentIntent' => $paymentIntent->client_secret,
                     'ephemeralKey' => $ephemeralKey->secret,
                     'customer' => $customer->id,
-                    'publishableKey' => 'pk_live_51PiyFcAiBmzIhYUNkEv5BkDyHmibaVhCR26BTspiiHt8VZUokgaRurLmhQG6SJthUjs4eEzfV2i3oOCjMeL3va2200Tf9Jn3Jj'
+                    'publishableKey' => 'pk_live_51PiyFcAiBmzIhYUNkEv5BkDyHmibaVhCR26BTspiiHt8VZUokgaRurLmhQG6SJthUjs4eEzfV2i3oOCjMeL3va2200Tf9Jn3Jj',
                     // 'publishableKey' => 'pk_test_51P3tGMIVnUY0WCEQUFadAdAUGWREQ5j7pZbzu70S6jWy8hQ9W7xCHwDPYf8TP9XHGLc9Yra0UNdisNroSq3pbXML00lkwC29gm' // test key
+                    // 'publishableKey' => env('STRIPE_KEY')
                 ];
 
                 return response()->json(['status' => 'success', 'paymentDetails' => $paymentData, 'paymentIntent' => $paymentIntent], 200);
@@ -828,8 +831,10 @@ class CheckoutController extends Controller
             $threeNumberLast = rand(10000000000000, 99999999999999);
             $rest = 'LF' . $userId . $threeNumberLast;
 
-            // Stripe::setApiKey('sk_test_51P3tGMIVnUY0WCEQxHNL3YHoZrqknskGyhCxvoNYgp3WXlwqMdpwZlY4XrdXDydWEokpgNMGNDwPysZ4lSCQ9l2o00JU1IB5hx');    test key
-            Stripe::setApiKey('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');
+            Stripe::setApiKey(env('STRIPE_SECRET'));
+            // Stripe::setApiKey('sk_test_51P3tGMIVnUY0WCEQxHNL3YHoZrqknskGyhCxvoNYgp3WXlwqMdpwZlY4XrdXDydWEokpgNMGNDwPysZ4lSCQ9l2o00JU1IB5hx');    // test key
+            // Stripe::setApiKey('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');
+
             $paymentIntentId = $request->input('txn_id');
 
             // Retrieve the payment intent from Stripe
@@ -923,6 +928,12 @@ class CheckoutController extends Controller
                     }
                     $orderData = array('order_id' => $order->order_id);
 
+                    $orderItemsDetails = OrderItems::where('order_id', $orderId)
+                        ->with(['product', 'variation'])
+                        ->get();
+
+                    $orderShippingAmount = Orders::where('id', $orderId)->first();
+
                     //email to user for payment confirmation
                     $user = User::where('id', $userId)->first();
                     $email = $user->email;
@@ -930,38 +941,56 @@ class CheckoutController extends Controller
                     $subject = 'Payment Confirmation';
 
                     $data = [
-                            'name' => $name,
-                            'amount' => number_format($paymentIntent->amount / 100, 2),
-                        ];
+                        'name' => $name,
+                        'amount' => number_format($paymentIntent->amount / 100, 2),
+                        'orderItems' => $orderItemsDetails,
+                        'shippingAmount' => $orderShippingAmount->shipping_amount,
+                    ];
 
                     Mail::send('payment_confirmation', $data, function ($message) use ($email, $name, $subject) {
                         $message->to($email, $name)
-                        ->subject($subject)
-                        ->from(env('MAIL_FROM_ADDRESS'), env('APP_NAME'));
+                            ->subject($subject)
+                            ->from(env('MAIL_FROM_ADDRESS'), env('APP_NAME'));
                     });
 
-                    //email to admin with order details
-                    $orderItems = OrderItems::where('order_id', $orderId)
-                    ->with(['product', 'variation'])
-                    ->get();
 
-                    $user = User::where('id', $userId)->first();
-                    $email = $user->email;
-                    $name = $user->name;
+                    //email to admin with order details
+                    $userAddress = Orders::where('id', $orderId)->first();
+
+                    $amountTottal = $userAddress->total_amount;
+                    $amountShippingg = $userAddress->shipping_amount;
+                    $amountPaid = $userAddress->pay_amount;
+
+                    //User address details 
+                    $address = UserAddress::where('id', $userAddress->address_id)->first();
+
+                    //Shipping address details
+                    $shippingAddress = Shipping::where('order_id', $orderId)->first();
+
+                    $userrrrr = User::where('id', $userId)->first();
+                    $emailll = $userrrrr->email;
+                    $nameee = $userrrrr->name;
+                    $phoneee = $userrrrr->phone ?? 'N/A';
 
                     $data = [
-                            'name' => $name,
-                            'email' => $email,
-                            'orderItems' => $orderItems,
-                        ];
+                        'nameee' => $nameee,
+                        'emailll' => $emailll,
+                        'phoneee' => $phoneee,
+                        'orderItems' => $orderItemsDetails,
+                        'address' => $address,
+                        'shippingAddress' => $shippingAddress,
+                        'amount' => number_format($paymentIntent->amount / 100, 2),
+                        'shippingAmount' => $orderShippingAmount->shipping_amount,
+                    ];
 
-                    $adminEmail = "logfeller@gmail.com";
-                    $subject = "Order Confirmation - Order #$orderId";
+                    $adminEmail = "raushan.cyberxinfosystem@gmail.com";
+                    $adminName = "Admin";
+                    $adminSubject = "Order Confirmation - Order #$orderId";
 
-                    Mail::send('admin_order_email', $data, function ($message) use ($adminEmail, $name, $subject) {
-                        $message->to($adminEmail, $name)
-                        ->subject($subject)
-                        ->from(env('MAIL_FROM_ADDRESS'), env('APP_NAME'));
+                    Mail::send('admin_order_email', $data, function ($message) use ($adminEmail, $adminName, $adminSubject) {
+                        $message->to($adminEmail, $adminName)
+                            ->subject($adminSubject)
+                            ->from(env('MAIL_FROM_ADDRESS'), env('APP_NAME'));
                     });
 
                     return response()->json(['status' => 'success', 'message' => 'Order placed successfully', 'data' => $orderData], 200);
@@ -1254,11 +1283,11 @@ class CheckoutController extends Controller
 
                     if (!empty($request->input('item'))) {
                         $currentDate = date('Y-m-d');
-                        if(!empty($inputs['couponId'])) {
+                        if (!empty($inputs['couponId'])) {
                             $discount = Discount::where('id', $inputs['couponId'])
-                            ->where('end_date', '>=', $currentDate)
-                            ->where('status', 1)
-                            ->first();
+                                ->where('end_date', '>=', $currentDate)
+                                ->where('status', 1)
+                                ->first();
                         }
 
                         if (empty($discount)) {
@@ -1313,7 +1342,7 @@ class CheckoutController extends Controller
                                 $product = Products::where('id', $productId)->first();
 
                                 $salePrice = $productData['sale_price'];
-                                
+
                                 $discountAmount = 0;
 
                                 // Calculate discount based on discount type
@@ -1367,8 +1396,6 @@ class CheckoutController extends Controller
                                     ->delete();
                             }
                         }
-
-                        
                     }
 
                     // Add shipping amount as a separate line item
@@ -1389,8 +1416,8 @@ class CheckoutController extends Controller
                         'payment_method_types' => ['card'],
                         'line_items' => $lineItems,
                         'mode' => 'payment',
-                        'success_url' => 'https://logfeller-payment.cyberx-infosystem.us/success/orderId=' . $orderId,
-                        'cancel_url' => 'https://logfeller-payment.cyberx-infosystem.us/cancel/orderId=' . $orderId,
+                        'success_url' => 'https://logfeller-payment.cyberx-infosystem.us/success/orderId=' . $orderId . '/userId=' . $userId,
+                        'cancel_url' => 'https://logfeller-payment.cyberx-infosystem.us/cancel/orderId=' . $orderId . '/userId=' . $userId,
                         'metadata' => [
                             'order_id' => $orderId,
                         ],
@@ -1420,10 +1447,11 @@ class CheckoutController extends Controller
         try {
             $inputs = $request->all();
 
-            $userId = $this->user_id;
+            $userId = $request->uid;
+            // $userId = $this->user_id; 
 
             $order = Orders::where('id', $inputs['orderId'])->first();
-            $userId = $order->user_id;
+            // $userId = $order->user_id;
 
             $session_id = $order->transaction_id;
             Stripe::setApiKey(env('STRIPE_SECRET'));
@@ -1456,7 +1484,13 @@ class CheckoutController extends Controller
                     }
                 }
             }
-            
+
+            $orderItemsDetails = OrderItems::where('order_id', $orderId)
+                ->with(['product', 'variation'])
+                ->get();
+
+            $orderShippingAmount = Orders::where('id', $orderId)->first();
+
             //email to user for payment confirmation
             $user = User::where('id', $userId)->first();
             $email = $user->email;
@@ -1465,7 +1499,9 @@ class CheckoutController extends Controller
 
             $data = [
                 'name' => $name,
-                'amount' => number_format($paymentIntent->amount / 100, 2), 
+                'amount' => number_format($paymentIntent->amount / 100, 2),
+                'orderItems' => $orderItemsDetails,
+                'shippingAmount' => $orderShippingAmount->shipping_amount,
             ];
 
             Mail::send('payment_confirmation', $data, function ($message) use ($email, $name, $subject) {
@@ -1476,30 +1512,43 @@ class CheckoutController extends Controller
 
 
             //email to admin with order details
-            $orderItems = OrderItems::where('order_id', $orderId)
-            ->with(['product', 'variation']) 
-            ->get();
+            $userAddress = Orders::where('id', $orderId)->first();
 
-            $user = User::where('id', $userId)->first();
-            $email = $user->email;
-            $name = $user->name;
+            $amountTottal = $userAddress->total_amount;
+            $amountShippingg = $userAddress->shipping_amount;
+            $amountPaid = $userAddress->pay_amount;
+
+            //User address details 
+            $address = UserAddress::where('id', $userAddress->address_id)->first();
+
+            //Shipping address details
+            $shippingAddress = Shipping::where('order_id', $orderId)->first();
+
+            $userrrrr = User::where('id', $userId)->first();
+            $emailll = $userrrrr->email;
+            $nameee = $userrrrr->name;
+            $phoneee = $userrrrr->phone ?? 'N/A';
 
             $data = [
-                'name' => $name,
-                'email' => $email,
-                'orderItems' => $orderItems, 
+                'nameee' => $nameee,
+                'emailll' => $emailll,
+                'phoneee' => $phoneee,
+                'orderItems' => $orderItemsDetails,
+                'address' => $address,
+                'shippingAddress' => $shippingAddress,
+                'amount' => number_format($paymentIntent->amount / 100, 2),
+                'shippingAmount' => $orderShippingAmount->shipping_amount,
             ];
 
-            $adminEmail = "logfeller@gmail.com";
-            $subject = "Order Confirmation - Order #$orderId";
+            $adminEmail = "raushan.cyberxinfosystem@gmail.com";
+            $adminName = "Admin";
+            $adminSubject = "Order Confirmation - Order #$orderId";
 
-            Mail::send('admin_order_email', $data, function ($message) use ($adminEmail, $name, $subject) {
-                $message->to($adminEmail, $name)
-                ->subject($subject)
-                ->from(env('MAIL_FROM_ADDRESS'), env('APP_NAME'));
+            Mail::send('admin_order_email', $data, function ($message) use ($adminEmail, $adminName, $adminSubject) {
+                $message->to($adminEmail, $adminName)
+                    ->subject($adminSubject)
+                    ->from(env('MAIL_FROM_ADDRESS'), env('APP_NAME'));
             });
-
-
 
             return response()->json([
                 'status' => 'success',
